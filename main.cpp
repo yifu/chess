@@ -7,12 +7,13 @@ using namespace std;
 int main()
 {
     int res = 0;
-    Uint32 renderer_flags = SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC;
+    Uint32 renderer_flags = 0;// SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC
     SDL_Window *display = nullptr;
     SDL_Renderer *ren = nullptr;
     SDL_Surface *bmp = nullptr;
     SDL_Texture *background = nullptr;
     SDL_Texture *image = nullptr;
+    SDL_Texture *square = nullptr;
     SDL_Rect dst;
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 480;
@@ -25,7 +26,8 @@ int main()
 
     cout << "Base path = " << SDL_GetBasePath() << "." << endl;
 
-    display = SDL_CreateWindow("Hello world!", 200, 300,
+    display = SDL_CreateWindow("Hello world!",
+			       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
 			       screenwidth, screenheigh, SDL_WINDOW_SHOWN);
     if(!display) {
 	cerr << "SDL_CreateWindow() error : " << SDL_GetError() << "." << endl;
@@ -74,6 +76,29 @@ int main()
     SDL_FreeSurface(bmp);
     bmp = nullptr;
 
+    bmp = SDL_CreateRGBSurface(0, 30, 30, 32, 0, 0, 0, 0);
+    if(!bmp) {
+	cerr << "SDL_CreateRGBSurface() error : " << SDL_GetError() << endl;
+	res = 1;
+	goto clean;
+    }
+
+    res = SDL_FillRect(bmp, nullptr, SDL_MapRGB(bmp->format, 255, 0, 0));
+    if(res != 0) {
+	cerr << "SDL_FillRect() error : " << SDL_GetError() << "." << endl;
+	goto clean;
+    }
+
+    square = SDL_CreateTextureFromSurface(ren, bmp);
+    if(!square) {
+	cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
+	res = 1;
+	goto clean;
+    }
+
+    SDL_FreeSurface(bmp);
+    bmp = nullptr;
+    SDL_SetRenderDrawColor(ren, 0xFF, 0xFF, 0xFF, 0xFF);
     for(int i = 0; i < 3; i++) {
 	SDL_RenderClear(ren);
 
@@ -105,12 +130,18 @@ int main()
 	dst.y = screenheigh / 2 - dst.h / 2;
 	SDL_RenderCopy(ren, image, nullptr, &dst);
 
+	dst.x = dst.y = 0;
+	dst.w = dst.h = 30;
+	SDL_RenderCopy(ren, square, nullptr, &dst);
+
 	SDL_RenderPresent(ren);
 
 	SDL_Delay(1000);
     }
 
  clean:
+    if(square)
+	SDL_DestroyTexture(square);
     if(image)
 	SDL_DestroyTexture(image);
     if(background)
