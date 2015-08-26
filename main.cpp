@@ -14,6 +14,8 @@ int main()
     SDL_Texture *background = nullptr;
     SDL_Texture *image = nullptr;
     SDL_Rect dst;
+    constexpr int screenwidth = 640;
+    constexpr int screenheigh = 480;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 	cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
@@ -23,7 +25,8 @@ int main()
 
     cout << "Base path = " << SDL_GetBasePath() << "." << endl;
 
-    display = SDL_CreateWindow("Hello world!", 100, 100, 640, 480, SDL_WINDOW_SHOWN);
+    display = SDL_CreateWindow("Hello world!", 200, 300,
+			       screenwidth, screenheigh, SDL_WINDOW_SHOWN);
     if(!display) {
 	cerr << "SDL_CreateWindow() error : " << SDL_GetError() << "." << endl;
 	res = 1;
@@ -71,14 +74,14 @@ int main()
     SDL_FreeSurface(bmp);
     bmp = nullptr;
 
-    res = SDL_QueryTexture(background, nullptr, nullptr, &dst.w, &dst.h);
-    if(res != 0) {
-	cerr << "SDL_QueryTexture() error : " << SDL_GetError() << "." << endl;
-	goto clean;
-    }
-
     for(int i = 0; i < 3; i++) {
 	SDL_RenderClear(ren);
+
+	res = SDL_QueryTexture(background, nullptr, nullptr, &dst.w, &dst.h);
+	if(res != 0) {
+	    cerr << "SDL_QueryTexture() error : " << SDL_GetError() << "." << endl;
+	    goto clean;
+	}
 
 	dst.x = dst.y = 0;
 	SDL_RenderCopy(ren, background, nullptr, &dst);
@@ -91,6 +94,16 @@ int main()
 	dst.x = dst.w;
 	dst.y = dst.h;
 	SDL_RenderCopy(ren, background, nullptr, &dst);
+
+	res = SDL_QueryTexture(image, nullptr, nullptr, &dst.w, &dst.h);
+	if(res != 0) {
+	    cerr << "SDL_QueryTexture() error : " << SDL_GetError() << "." << endl;
+	    goto clean;
+	}
+
+	dst.x = screenwidth / 2 - dst.w / 2;
+	dst.y = screenheigh / 2 - dst.h / 2;
+	SDL_RenderCopy(ren, image, nullptr, &dst);
 
 	SDL_RenderPresent(ren);
 
