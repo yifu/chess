@@ -25,9 +25,9 @@ void paint_chess_board()
 	for(int r = 0; r < 8; r++)
 	{
 	    if((c % 2 == 0 && r % 2 == 0) || (c % 2 == 1 && r % 2 == 1))
-		SDL_SetRenderDrawColor(ren, 255, 255, 255, SDL_ALPHA_OPAQUE); // White square
+		SDL_SetRenderDrawColor(ren, 200, 200, 216, SDL_ALPHA_OPAQUE); // White square
 	    else
-		SDL_SetRenderDrawColor(ren, 255, 0, 0, SDL_ALPHA_OPAQUE); // Dark square
+		SDL_SetRenderDrawColor(ren, 100, 100, 140, SDL_ALPHA_OPAQUE); // Dark square
 
 	    // printf("dst.x=%d, dst.y=%d, dst.w=%d, dst.h=%d.\n",
 	    //        dst.x, dst.y, dst.w, dst.h);
