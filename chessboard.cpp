@@ -46,6 +46,7 @@ int main()
     constexpr Uint32 renderer_flags = 0;
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
+    bool quit = false;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 	cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
@@ -69,10 +70,26 @@ int main()
 	goto clean;
     }
 
-    for(int i = 0; i < 3; i++) {
+    while(!quit)
+    {
+	SDL_Event e;
+	if(SDL_PollEvent(&e))
+	{
+	    if(e.type == SDL_QUIT)
+	    {
+		printf("quit\n");
+	    	quit = true;
+	    }
+	    else if(e.type == SDL_KEYDOWN)
+	    {
+		printf("key down %d\n", e.key.keysym.sym);
+		if(e.key.keysym.sym == SDLK_ESCAPE)
+		    quit = true;
+	    }
+	}
 	paint_chess_board();
-	SDL_Delay(1000);
     }
+    printf("bye!\n");
 
  clean:
     if(ren)
