@@ -43,7 +43,7 @@ void paint_chess_board()
 int main()
 {
     int res = 0;
-    constexpr Uint32 renderer_flags = 0;
+    constexpr Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
     bool quit = false;
