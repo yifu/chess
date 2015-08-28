@@ -1,5 +1,8 @@
 #include <iostream>
 #include <unistd.h>
+#include <time.h>
+#include <assert.h>
+#include <stdint.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -10,18 +13,55 @@ SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
 SDL_Surface *img = nullptr;
 SDL_Texture *pion = nullptr;
+SDL_Rect pawn_rect;
+int square_width, square_heigh;
+
+struct timespec last_time;
+
+void print_rect(SDL_Rect r)
+{
+    printf("r.x=%d, r.y=%d, r.w=%d, r.h=%d.\n",
+	   r.x, r.y, r.w, r.h);
+}
+
+void print_timespec(struct timespec t)
+{
+    printf("tv_sec=%lu, tv_nsec=%lu.\n", t.tv_sec, t.tv_nsec);
+}
+
+uint64_t substract_time(struct timespec l, struct timespec r)
+{
+    assert(l.tv_sec > r.tv_sec ||
+	   (l.tv_sec == r.tv_sec && l.tv_nsec > r.tv_nsec));
+    assert(l.tv_nsec < 1000000000);
+    assert(r.tv_nsec < 1000000000);
+
+    uint64_t result = 0;
+    if(r.tv_sec == r.tv_sec)
+    {
+	result = l.tv_nsec - r.tv_nsec;
+    }
+    else
+    {
+	assert(l.tv_sec > r.tv_sec);
+	uint64_t sec = l.tv_sec - r.tv_sec;
+	uint64_t nsec = 1000000000 * sec;
+	printf("inter=%lu.\n", nsec);
+	nsec += l.tv_nsec;
+	nsec += (1000000000 - r.tv_nsec);
+	result = nsec;
+    }
+    return result;
+}
 
 void paint_chess_board()
 {
-    SDL_Rect dst, viewport;
-    int square_width, square_heigh;
+    SDL_Rect dst;
+
+    int res;
 
     SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(ren);
-
-    SDL_RenderGetViewport(ren, &viewport);
-    square_width = viewport.w / 8;
-    square_heigh = viewport.h / 8;
 
     dst.x = dst.y = 0;
     dst.w = square_width;
@@ -45,10 +85,28 @@ void paint_chess_board()
 	dst.y += dst.h;
     }
 
-    dst.x = dst.y = 0;
-    dst.w = square_width;
-    dst.h = square_heigh;
-    SDL_RenderCopy(ren, pion, nullptr, &dst);
+    struct timespec new_time;
+    res = clock_gettime(CLOCK_MONOTONIC_RAW, &new_time);
+    if(res == -1)
+    {
+	perror("clock_gettime():");
+	res = 1;
+	exit(EXIT_FAILURE);
+    }
+
+    uint64_t diff = substract_time(new_time, last_time);
+    if(diff > 16*1000000)
+    {
+	printf("here\n");
+	pawn_rect.x += 4;
+	last_time = new_time;
+    }
+    printf("====\n");
+    print_timespec(new_time);
+    print_timespec(last_time);
+    printf("diff=%lu, %d.\n", diff, 1000000000);
+    print_rect(pawn_rect);
+    SDL_RenderCopy(ren, pion, nullptr, &pawn_rect);
 
     SDL_RenderPresent(ren);
     SDL_UpdateWindowSurface(display);
@@ -61,6 +119,8 @@ int main()
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
     bool quit = false;
+    int i = 0;
+    SDL_Rect viewport;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
 	cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
@@ -101,6 +161,23 @@ int main()
     if(img)
     	SDL_FreeSurface(img);
     img = nullptr;
+
+    SDL_RenderGetViewport(ren, &viewport);
+    square_width = viewport.w / 8;
+    square_heigh = viewport.h / 8;
+
+    pawn_rect.x = pawn_rect.y = 0;
+    pawn_rect.w = square_width;
+    pawn_rect.h = square_heigh;
+
+    res = clock_gettime(CLOCK_MONOTONIC_RAW, &last_time);
+    if(res == -1)
+    {
+	perror("clock_gettime():");
+	res = 1;
+	exit(EXIT_FAILURE);
+    }
+
     while(!quit)
     {
 	SDL_Event e;
