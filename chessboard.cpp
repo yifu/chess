@@ -1,24 +1,32 @@
 #include <iostream>
+#include <unistd.h>
 
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 
 using namespace std;
 
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
+SDL_Surface *img = nullptr;
+SDL_Texture *pion = nullptr;
 
 void paint_chess_board()
 {
     SDL_Rect dst, viewport;
+    int square_width, square_heigh;
 
     SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(ren);
 
     SDL_RenderGetViewport(ren, &viewport);
+    square_width = viewport.w / 8;
+    square_heigh = viewport.h / 8;
 
     dst.x = dst.y = 0;
-    dst.w = viewport.w / 8;
-    dst.h = viewport.h / 8;
+    dst.w = square_width;
+    dst.h = square_heigh;
+
     for(int c = 0; c < 8; c++)
     {
 	dst.x = 0;
@@ -36,6 +44,12 @@ void paint_chess_board()
 	}
 	dst.y += dst.h;
     }
+
+    dst.x = dst.y = 0;
+    dst.w = square_width;
+    dst.h = square_heigh;
+    SDL_RenderCopy(ren, pion, nullptr, &dst);
+
     SDL_RenderPresent(ren);
     SDL_UpdateWindowSurface(display);
 }
@@ -70,6 +84,23 @@ int main()
 	goto clean;
     }
 
+    img = IMG_Load("./Chess_plt60.png");
+    if(!img) {
+    	cerr << "IMG_Load() error : " << IMG_GetError() << endl;
+    	res = 1;
+    	goto clean;
+    }
+
+    pion = SDL_CreateTextureFromSurface(ren, img);
+    if(!pion) {
+    	cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
+    	res = 1;
+    	goto clean;
+    }
+
+    if(img)
+    	SDL_FreeSurface(img);
+    img = nullptr;
     while(!quit)
     {
 	SDL_Event e;
@@ -92,6 +123,10 @@ int main()
     printf("bye!\n");
 
  clean:
+    if(pion)
+	SDL_DestroyTexture(pion);
+    if(img)
+	SDL_FreeSurface(img);
     if(ren)
 	SDL_DestroyRenderer(ren);
     if(display)
@@ -100,4 +135,4 @@ int main()
     return res;
 }
 
-// g++ -ggdb -std=c++11 chessboard.cpp $(sdl2-config --cflags --libs)
+// g++ -ggdb -std=c++11 chessboard.cpp $(sdl2-config --cflags --libs) -lSDL2_image
