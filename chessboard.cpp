@@ -12,7 +12,7 @@ using namespace std;
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
 SDL_Surface *img = nullptr;
-SDL_Texture *pion = nullptr;
+SDL_Texture *pawn = nullptr;
 SDL_Rect pawn_rect;
 int square_width, square_heigh;
 
@@ -106,7 +106,7 @@ void paint_chess_board()
     print_timespec(last_time);
     printf("diff=%lu, %d.\n", diff, 1000000000);
     print_rect(pawn_rect);
-    SDL_RenderCopy(ren, pion, nullptr, &pawn_rect);
+    SDL_RenderCopy(ren, pawn, nullptr, &pawn_rect);
 
     SDL_RenderPresent(ren);
     SDL_UpdateWindowSurface(display);
@@ -151,8 +151,8 @@ int main()
     	goto clean;
     }
 
-    pion = SDL_CreateTextureFromSurface(ren, img);
-    if(!pion) {
+    pawn = SDL_CreateTextureFromSurface(ren, img);
+    if(!pawn) {
     	cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
     	res = 1;
     	goto clean;
@@ -200,8 +200,8 @@ int main()
     printf("bye!\n");
 
  clean:
-    if(pion)
-	SDL_DestroyTexture(pion);
+    if(pawn)
+	SDL_DestroyTexture(pawn);
     if(img)
 	SDL_FreeSurface(img);
     if(ren)
