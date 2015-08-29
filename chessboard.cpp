@@ -19,6 +19,12 @@ SDL_Texture *tex = nullptr;
 
 int square_width, square_heigh;
 
+bool operator == (SDL_Rect l, SDL_Rect r)
+{
+    return l.x == r.x && l.y == r.y &&
+	l.w == r.w && l.h == r.h;
+}
+
 bool is_hitting_rect(SDL_Rect rect, Sint32 x, Sint32 y)
 {
     return x >= rect.x &&
@@ -73,6 +79,7 @@ struct piece
     SDL_Texture *tex = nullptr;
     SDL_Rect rect = {0,0,0,0};
     bool is_dragged = false;
+    struct square orig_square = {0,0};
 };
 
 vector<struct piece> pieces;
@@ -307,8 +314,12 @@ int main()
     for(int i = 0; i < 8; i++)
     {
 	p.tex = tex;
-	p.rect = { i * square_width, square_heigh * 6,
-		   square_width, square_heigh };
+	p.orig_square.row = 6;
+	p.orig_square.col = i;
+	p.rect = square2rect(p.orig_square);
+	SDL_Rect rect = { i * square_width, square_heigh * 6,
+			  square_width, square_heigh };
+	assert(p.rect == rect);
 	pieces.push_back(p);
     }
 
