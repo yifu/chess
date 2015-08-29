@@ -18,8 +18,21 @@ bool quit = false;
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
 
-vector<SDL_Texture*> textures;
-vector<SDL_Surface*> surfaces;
+SDL_Surface *icon = nullptr;
+
+SDL_Texture *white_pawn_texture = nullptr;
+SDL_Texture *white_rook_texture = nullptr;
+SDL_Texture *white_knight_texture = nullptr;
+SDL_Texture *white_bishop_texture = nullptr;
+SDL_Texture *white_queen_texture = nullptr;
+SDL_Texture *white_king_texture = nullptr;
+
+SDL_Texture *black_pawn_texture = nullptr;
+SDL_Texture *black_rook_texture = nullptr;
+SDL_Texture *black_knight_texture = nullptr;
+SDL_Texture *black_bishop_texture = nullptr;
+SDL_Texture *black_queen_texture = nullptr;
+SDL_Texture *black_king_texture = nullptr;
 
 int square_width, square_heigh;
 
@@ -40,6 +53,8 @@ SDL_Rect square2rect(struct square square)
     assert(square.row <= 7);
     assert(square.col <= 7);
 
+    // TODO A variable must tell what is the color of the end user of
+    // this application instance. His color must appear bottom side.
     SDL_Rect rect;
     rect.x = square.col * square_width;
     rect.y = square.row * square_heigh;
@@ -55,8 +70,6 @@ struct sprite
     bool is_dragged = false;
     struct square orig_square = {0,0};
 };
-
-vector<struct sprite> sprites;
 
 void print_timespec(struct timespec t)
 {
@@ -115,7 +128,7 @@ uint64_t substract_time(struct timespec l, struct timespec r)
     return result;
 }
 
-void assertInvariants()
+void assertInvariants(vector<struct sprite> sprites)
 {
     int dragged_sprite_cnt = 0;
     for(auto sprite : sprites)
@@ -130,10 +143,10 @@ void assertInvariants()
     assert(dragged_sprite_cnt == 0 || dragged_sprite_cnt == 1);
 }
 
-void process_input_events()
+void process_input_events(vector<struct sprite>& sprites)
 {
     SDL_Event e;
-    assertInvariants();
+    assertInvariants(sprites);
 
     if(SDL_PollEvent(&e))
     {
@@ -187,6 +200,7 @@ void process_input_events()
         }
         case SDL_MOUSEBUTTONUP:
         {
+	    // print_mouse_button_event(e);
 	    bool found = false;
 	    for(size_t i = 0; i < sprites.size(); i++)
 	    {
@@ -196,12 +210,9 @@ void process_input_events()
 		    found = true;
 		    sprites[i].is_dragged = false;
 		    sprites[i].orig_square = detect_square(e.button.x, e.button.y);
-		    // print_square(s);
 		    sprites[i].rect = square2rect(sprites[i].orig_square);
-		    // print_rect(sprites[i].rect);
 		}
 	    }
-	    // print_mouse_button_event(e);
             break;
         }
         default:
@@ -211,15 +222,12 @@ void process_input_events()
         }
         }
     }
-    assertInvariants();
+    assertInvariants(sprites);
 }
 
 void paint_chess_board()
 {
     SDL_Rect dst;
-
-    assertInvariants();
-
     // TODO BIG REFACTORING. We must use the list from the game, and
     // re-generate the sprites from this list, at each turn of the
     // game loop.
@@ -245,12 +253,12 @@ void paint_chess_board()
         }
         dst.y += dst.h;
     }
-    assertInvariants();
 }
 
-void paint_sprites()
+void paint_sprites(const vector<struct sprite>& sprites)
 {
-    assertInvariants();
+    assertInvariants(sprites);
+    // printf("sprites.size()=%lu.\n", sprites.size());
     for(auto sprite : sprites)
     {
 	if(sprite.is_dragged)
@@ -265,22 +273,38 @@ void paint_sprites()
 	SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
 
-    assertInvariants();
+    assertInvariants(sprites);
 }
 
 void clean_up()
 {
-    for(auto texture: textures)
-    {
-	assert(texture);
-	SDL_DestroyTexture(texture);
-    }
+    if(icon)
+	SDL_FreeSurface(icon);
+    if(white_pawn_texture)
+	SDL_DestroyTexture(white_pawn_texture);
+    if(white_rook_texture)
+	SDL_DestroyTexture(white_rook_texture);
+    if(white_knight_texture)
+	SDL_DestroyTexture(white_knight_texture);
+    if(white_bishop_texture)
+	SDL_DestroyTexture(white_bishop_texture);
+    if(white_queen_texture)
+	SDL_DestroyTexture(white_queen_texture);
+    if(white_king_texture)
+	SDL_DestroyTexture(white_king_texture);
 
-    for(auto surface : surfaces)
-    {
-	assert(surface);
-	SDL_FreeSurface(surface);
-    }
+    if(black_pawn_texture)
+	SDL_DestroyTexture(black_pawn_texture);
+    if(black_rook_texture)
+	SDL_DestroyTexture(black_rook_texture);
+    if(black_knight_texture)
+	SDL_DestroyTexture(black_knight_texture);
+    if(black_bishop_texture)
+	SDL_DestroyTexture(black_bishop_texture);
+    if(black_queen_texture)
+	SDL_DestroyTexture(black_queen_texture);
+    if(black_king_texture)
+	SDL_DestroyTexture(black_king_texture);
 
     if(ren)
         SDL_DestroyRenderer(ren);
@@ -302,95 +326,106 @@ void exit_failure()
     exit(EXIT_FAILURE);
 }
 
-void initSprite(struct square square, string img_filename)
+SDL_Texture *init_texture(string filename)
 {
-    SDL_Surface *surface = IMG_Load(img_filename.c_str());
+    SDL_Surface *surface = IMG_Load(filename.c_str());
     if(!surface) {
 	cerr << "IMG_Load() error : " << IMG_GetError() << endl;
 	exit_failure();
     }
-    surfaces.push_back(surface);
-
     SDL_Texture *texture = SDL_CreateTextureFromSurface(ren, surface);
-    if(!texture) {
+    if(!texture){
 	cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
 	exit_failure();
     }
-    textures.push_back(texture);
+    SDL_FreeSurface(surface);
+    return texture;
+}
 
+void init_textures()
+{
+    SDL_Surface *surface = nullptr;
+    white_pawn_texture = init_texture("./Chess_plt60.png");
+    white_rook_texture = init_texture("./Chess_rlt60.png");
+    white_knight_texture = init_texture("./Chess_nlt60.png");
+    white_bishop_texture = init_texture("./Chess_blt60.png");
+    white_queen_texture =  init_texture("./Chess_qlt60.png");
+    white_king_texture = init_texture("./Chess_klt60.png");
+
+    black_pawn_texture = init_texture("./Chess_pdt60.png");
+    black_rook_texture = init_texture("./Chess_rdt60.png");
+    black_knight_texture = init_texture("./Chess_ndt60.png");
+    black_bishop_texture = init_texture("./Chess_bdt60.png");
+    black_queen_texture =  init_texture("./Chess_qdt60.png");
+    black_king_texture = init_texture("./Chess_kdt60.png");
+}
+
+struct sprite init_sprite(struct square square, SDL_Texture *texture)
+{
+    assert(texture);
     struct sprite sprite;
     sprite.tex = texture;
     sprite.orig_square = square;
     sprite.rect = square2rect(sprite.orig_square);
-    sprites.push_back(sprite);
+    print_rect(sprite.rect);
+    return sprite;
+}
+
+SDL_Texture *deduct_texture(struct piece piece)
+{
+    if(piece.color == color::white)
+    {
+	switch(piece.type)
+	{
+	case type::pawn: return white_pawn_texture;
+	case type::rook: return white_rook_texture;
+	case type::knight: return white_knight_texture;
+	case type::bishop: return white_bishop_texture;
+	case type::queen: return white_queen_texture;
+	case type::king: return white_king_texture;
+	}
+    }
+    else
+    {
+	switch(piece.type)
+	{
+	case type::pawn: return black_pawn_texture;
+	case type::rook: return black_rook_texture;
+	case type::knight: return black_knight_texture;
+	case type::bishop: return black_bishop_texture;
+	case type::queen: return black_queen_texture;
+	case type::king: return black_king_texture;
+	}
+    }
+    assert(false);
+    return nullptr;
+}
+
+vector<struct sprite> init_sprites(vector<struct piece> pieces)
+{
+    vector<struct sprite> sprites;
+
+    for(struct piece piece : pieces)
+    {
+	sprites.push_back(init_sprite(piece.square, deduct_texture(piece)));
+    }
+    // printf("init pieces=%lu, sprites = %lu.\n",
+    // 	   pieces.size(), sprites.size());
+
+    return sprites;
 }
 
 void initWindowIcon()
 {
-    SDL_Surface *icon = IMG_Load("./Chess_ndt60.png");
+    icon = IMG_Load("./Chess_ndt60.png");
     if(!icon) {
 	cerr << "IMG_Load() error : " << IMG_GetError() << endl;
 	exit_failure();
     }
-    surfaces.push_back(icon);
-    icon = SDL_ConvertSurfaceFormat(icon, SDL_PIXELFORMAT_ARGB8888, 0);
-    assert(icon->format->format == SDL_PIXELFORMAT_ARGB8888);
+    // icon = SDL_ConvertSurfaceFormat(icon, SDL_PIXELFORMAT_ARGB8888, 0);
+    // assert(icon->format->format == SDL_PIXELFORMAT_ARGB8888);
     printf("Set Window icon.\n");
     SDL_SetWindowIcon(display, icon);
-}
-
-void initSprites()
-{
-    assert(ren);
-
-    struct square square;
-
-    for(uint8_t i = 0; i < 8; i++)
-    {
-	square = {6, i};
-	initSprite(square, "./Chess_plt60.png");
-	square = {1, i};
-	initSprite(square, "./Chess_pdt60.png");
-    }
-
-    square = {7, 0};
-    initSprite(square, "./Chess_rlt60.png");
-    square = {7, 7};
-    initSprite(square, "./Chess_rlt60.png");
-    square = {0, 0};
-    initSprite(square, "./Chess_rdt60.png");
-    square = {0, 7};
-    initSprite(square, "./Chess_rdt60.png");
-
-    square = {7, 1};
-    initSprite(square, "./Chess_nlt60.png");
-    square = {7, 6};
-    initSprite(square, "./Chess_nlt60.png");
-    square = {0, 1};
-    initSprite(square, "./Chess_ndt60.png");
-    square = {0, 6};
-    initSprite(square, "./Chess_ndt60.png");
-
-    square = {7, 2};
-    initSprite(square, "./Chess_blt60.png");
-    square = {7, 5};
-    initSprite(square, "./Chess_blt60.png");
-    square = {0, 2};
-    initSprite(square, "./Chess_bdt60.png");
-    square = {0, 5};
-    initSprite(square, "./Chess_bdt60.png");
-
-    square = {7, 3};
-    initSprite(square, "./Chess_qlt60.png");
-    square = {0, 3};
-    initSprite(square, "./Chess_qdt60.png");
-
-    square = {7, 4};
-    initSprite(square, "./Chess_klt60.png");
-    square = {0, 4};
-    initSprite(square, "./Chess_kdt60.png");
-
-    assertInvariants();
 }
 
 int main()
@@ -426,17 +461,22 @@ int main()
     initWindowIcon();
     SDL_ShowWindow(display);
 
-    initSprites();
+    init_textures();
+
+    struct game game;
+    game.pieces = initial_board;
+
+    vector<struct sprite> sprites = init_sprites(game.pieces);
 
     while(!quit)
     {
-        process_input_events();
+        process_input_events(sprites);
 
 	SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(ren);
 
         paint_chess_board();
-	paint_sprites();
+	paint_sprites(sprites);
 
 	SDL_RenderPresent(ren);
 	assert(display);

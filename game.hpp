@@ -43,7 +43,6 @@ struct game
     enum color cur_player = color::white;
     std::vector<struct move> moves;
     std::vector<struct piece> pieces;
-
 };
 
 void print_square(struct square square);
