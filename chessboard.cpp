@@ -351,6 +351,9 @@ void initPiece(struct square square, string img_filename)
 void initPieces()
 {
     assert(ren);
+
+    struct square square;
+
     for(uint8_t i = 0; i < 8; i++)
     {
 	square = {6, i};
@@ -359,6 +362,17 @@ void initPieces()
 	square = {1, i};
 	initPiece(square, "./Chess_pdt60.png");
     }
+
+    square = {7, 0};
+    initPiece(square, "./Chess_rlt60.png");
+    square = {7, 7};
+    initPiece(square, "./Chess_rlt60.png");
+
+    square = {0, 0};
+    initPiece(square, "./Chess_rdt60.png");
+    square = {0, 7};
+    initPiece(square, "./Chess_rdt60.png");
+
     assertInvariants();
 }
 
