@@ -21,7 +21,7 @@ struct timespec last_time;
 void print_rect(SDL_Rect r)
 {
     printf("r.x=%d, r.y=%d, r.w=%d, r.h=%d.\n",
-	   r.x, r.y, r.w, r.h);
+           r.x, r.y, r.w, r.h);
 }
 
 void print_timespec(struct timespec t)
@@ -32,24 +32,23 @@ void print_timespec(struct timespec t)
 uint64_t substract_time(struct timespec l, struct timespec r)
 {
     assert(l.tv_sec > r.tv_sec ||
-	   (l.tv_sec == r.tv_sec && l.tv_nsec > r.tv_nsec));
+           (l.tv_sec == r.tv_sec && l.tv_nsec > r.tv_nsec));
     assert(l.tv_nsec < 1000000000);
     assert(r.tv_nsec < 1000000000);
 
     uint64_t result = 0;
     if(r.tv_sec == r.tv_sec)
     {
-	result = l.tv_nsec - r.tv_nsec;
+        result = l.tv_nsec - r.tv_nsec;
     }
     else
     {
-	assert(l.tv_sec > r.tv_sec);
-	uint64_t sec = l.tv_sec - r.tv_sec;
-	uint64_t nsec = 1000000000 * sec;
-	printf("inter=%lu.\n", nsec);
-	nsec += l.tv_nsec;
-	nsec += (1000000000 - r.tv_nsec);
-	result = nsec;
+        assert(l.tv_sec > r.tv_sec);
+        uint64_t sec = l.tv_sec - r.tv_sec;
+        uint64_t nsec = 1000000000 * sec;
+        nsec += l.tv_nsec;
+        nsec += (1000000000 - r.tv_nsec);
+        result = nsec;
     }
     return result;
 }
@@ -69,43 +68,38 @@ void paint_chess_board()
 
     for(int c = 0; c < 8; c++)
     {
-	dst.x = 0;
-	for(int r = 0; r < 8; r++)
-	{
-	    if((c % 2 == 0 && r % 2 == 0) || (c % 2 == 1 && r % 2 == 1))
-		SDL_SetRenderDrawColor(ren, 200, 200, 216, SDL_ALPHA_OPAQUE); // White square
-	    else
-		SDL_SetRenderDrawColor(ren, 100, 100, 140, SDL_ALPHA_OPAQUE); // Dark square
+        dst.x = 0;
+        for(int r = 0; r < 8; r++)
+        {
+            if((c % 2 == 0 && r % 2 == 0) || (c % 2 == 1 && r % 2 == 1))
+                SDL_SetRenderDrawColor(ren, 200, 200, 216, SDL_ALPHA_OPAQUE); // White square
+            else
+                SDL_SetRenderDrawColor(ren, 100, 100, 140, SDL_ALPHA_OPAQUE); // Dark square
 
-	    // printf("dst.x=%d, dst.y=%d, dst.w=%d, dst.h=%d.\n",
-	    //        dst.x, dst.y, dst.w, dst.h);
-	    SDL_RenderFillRect(ren, &dst);
-	    dst.x += dst.w;
-	}
-	dst.y += dst.h;
+            // printf("dst.x=%d, dst.y=%d, dst.w=%d, dst.h=%d.\n",
+            //        dst.x, dst.y, dst.w, dst.h);
+            SDL_RenderFillRect(ren, &dst);
+            dst.x += dst.w;
+        }
+        dst.y += dst.h;
     }
 
     struct timespec new_time;
     res = clock_gettime(CLOCK_MONOTONIC_RAW, &new_time);
     if(res == -1)
     {
-	perror("clock_gettime():");
-	res = 1;
-	exit(EXIT_FAILURE);
+        perror("clock_gettime():");
+        res = 1;
+        exit(EXIT_FAILURE);
     }
 
     uint64_t diff = substract_time(new_time, last_time);
     if(diff > 16*1000000)
     {
-	printf("here\n");
-	pawn_rect.x += 4;
-	last_time = new_time;
+        pawn_rect.x += 4;
+        last_time = new_time;
     }
-    printf("====\n");
-    print_timespec(new_time);
-    print_timespec(last_time);
-    printf("diff=%lu, %d.\n", diff, 1000000000);
-    print_rect(pawn_rect);
+
     SDL_RenderCopy(ren, pawn, nullptr, &pawn_rect);
 
     SDL_RenderPresent(ren);
@@ -123,43 +117,43 @@ int main()
     SDL_Rect viewport;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
-	cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
-	res = 1;
-	goto clean;
+        cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
+        res = 1;
+        goto clean;
     }
 
     display = SDL_CreateWindow("Hello world!",
-			       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-			       screenwidth, screenheigh, SDL_WINDOW_SHOWN);
+                               SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+                               screenwidth, screenheigh, SDL_WINDOW_SHOWN);
     if(!display) {
-	cerr << "SDL_CreateWindow() error : " << SDL_GetError() << "." << endl;
-	res = 1;
-	goto clean;
+        cerr << "SDL_CreateWindow() error : " << SDL_GetError() << "." << endl;
+        res = 1;
+        goto clean;
     }
 
     ren = SDL_CreateRenderer(display, -1/*index*/, renderer_flags);
     if(!ren) {
-	cerr << "SDL_CreateRenderer() error :" << SDL_GetError() << "." << endl;
-	res = 1;
-	goto clean;
+        cerr << "SDL_CreateRenderer() error :" << SDL_GetError() << "." << endl;
+        res = 1;
+        goto clean;
     }
 
     img = IMG_Load("./Chess_plt60.png");
     if(!img) {
-    	cerr << "IMG_Load() error : " << IMG_GetError() << endl;
-    	res = 1;
-    	goto clean;
+        cerr << "IMG_Load() error : " << IMG_GetError() << endl;
+        res = 1;
+        goto clean;
     }
 
     pawn = SDL_CreateTextureFromSurface(ren, img);
     if(!pawn) {
-    	cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
-    	res = 1;
-    	goto clean;
+        cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
+        res = 1;
+        goto clean;
     }
 
     if(img)
-    	SDL_FreeSurface(img);
+        SDL_FreeSurface(img);
     img = nullptr;
 
     SDL_RenderGetViewport(ren, &viewport);
@@ -173,41 +167,41 @@ int main()
     res = clock_gettime(CLOCK_MONOTONIC_RAW, &last_time);
     if(res == -1)
     {
-	perror("clock_gettime():");
-	res = 1;
-	exit(EXIT_FAILURE);
+        perror("clock_gettime():");
+        res = 1;
+        exit(EXIT_FAILURE);
     }
 
     while(!quit)
     {
-	SDL_Event e;
-	if(SDL_PollEvent(&e))
-	{
-	    if(e.type == SDL_QUIT)
-	    {
-		printf("quit\n");
-	    	quit = true;
-	    }
-	    else if(e.type == SDL_KEYDOWN)
-	    {
-		printf("key down %d\n", e.key.keysym.sym);
-		if(e.key.keysym.sym == SDLK_ESCAPE)
-		    quit = true;
-	    }
-	}
-	paint_chess_board();
+        SDL_Event e;
+        if(SDL_PollEvent(&e))
+        {
+            if(e.type == SDL_QUIT)
+            {
+                printf("quit\n");
+                quit = true;
+            }
+            else if(e.type == SDL_KEYDOWN)
+            {
+                printf("key down %d\n", e.key.keysym.sym);
+                if(e.key.keysym.sym == SDLK_ESCAPE)
+                    quit = true;
+            }
+        }
+        paint_chess_board();
     }
     printf("bye!\n");
 
  clean:
     if(pawn)
-	SDL_DestroyTexture(pawn);
+        SDL_DestroyTexture(pawn);
     if(img)
-	SDL_FreeSurface(img);
+        SDL_FreeSurface(img);
     if(ren)
-	SDL_DestroyRenderer(ren);
+        SDL_DestroyRenderer(ren);
     if(display)
-	SDL_DestroyWindow(display);
+        SDL_DestroyWindow(display);
     SDL_Quit();
     return res;
 }
