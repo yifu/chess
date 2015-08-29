@@ -348,6 +348,20 @@ void initPiece(struct square square, string img_filename)
     pieces.push_back(piece);
 }
 
+void initWindowIcon()
+{
+    SDL_Surface *icon = IMG_Load("./Chess_ndt60.png");
+    if(!icon) {
+	cerr << "IMG_Load() error : " << IMG_GetError() << endl;
+	exit_failure();
+    }
+    surfaces.push_back(icon);
+    icon = SDL_ConvertSurfaceFormat(icon, SDL_PIXELFORMAT_ARGB8888, 0);
+    assert(icon->format->format == SDL_PIXELFORMAT_ARGB8888);
+    printf("Set Window icon.\n");
+    SDL_SetWindowIcon(display, icon);
+}
+
 void initPieces()
 {
     assert(ren);
@@ -414,9 +428,9 @@ int main()
 	exit_failure();
     }
 
-    display = SDL_CreateWindow("Hello world!",
+    display = SDL_CreateWindow("Chess",
                                SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-                               screenwidth, screenheigh, SDL_WINDOW_SHOWN);
+                               screenwidth, screenheigh, SDL_WINDOW_HIDDEN);
     if(!display) {
         cerr << "SDL_CreateWindow() error : " << SDL_GetError() << "." << endl;
 	exit_failure();
@@ -431,6 +445,9 @@ int main()
     SDL_RenderGetViewport(ren, &viewport);
     square_width = viewport.w / 8;
     square_heigh = viewport.h / 8;
+
+    initWindowIcon();
+    SDL_ShowWindow(display);
 
     initPieces();
 
