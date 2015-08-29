@@ -57,7 +57,7 @@ SDL_Rect square2rect(struct square square)
     return rect;
 }
 
-struct piece
+struct sprite
 {
     SDL_Texture *tex = nullptr;
     SDL_Rect rect = {0,0,0,0};
@@ -65,7 +65,7 @@ struct piece
     struct square orig_square = {0,0};
 };
 
-vector<struct piece> pieces;
+vector<struct sprite> sprites;
 
 void print_timespec(struct timespec t)
 {
@@ -126,17 +126,17 @@ uint64_t substract_time(struct timespec l, struct timespec r)
 
 void assertInvariants()
 {
-    int dragged_piece_cnt = 0;
-    for(auto piece : pieces)
+    int dragged_sprite_cnt = 0;
+    for(auto sprite : sprites)
     {
-	if(piece.is_dragged)
+	if(sprite.is_dragged)
 	{
-	    dragged_piece_cnt++;
+	    dragged_sprite_cnt++;
 	    continue;
 	}
-	assert(piece.rect == square2rect(piece.orig_square));
+	assert(sprite.rect == square2rect(sprite.orig_square));
     }
-    assert(dragged_piece_cnt == 0 || dragged_piece_cnt == 1);
+    assert(dragged_sprite_cnt == 0 || dragged_sprite_cnt == 1);
 }
 
 void process_input_events()
@@ -165,15 +165,15 @@ void process_input_events()
         {
             // print_mouse_motion(e);
 	    bool found = false; // TODO int count?
-	    for(size_t i = 0; i < pieces.size(); i++)
+	    for(size_t i = 0; i < sprites.size(); i++)
 	    {
-		if(pieces[i].is_dragged)
+		if(sprites[i].is_dragged)
 		{
 		    assert(!found);
 		    found = true;
-		    // TODO Implement a function: updateDraggedXY() or updateDraggedPiecePos()...
-		    pieces[i].rect.x = e.motion.x - square_width / 2;
-		    pieces[i].rect.y = e.motion.y - square_heigh / 2;
+		    // TODO Implement a function: updateDraggedXY() or updateDraggedSpritePos()...
+		    sprites[i].rect.x = e.motion.x - square_width / 2;
+		    sprites[i].rect.y = e.motion.y - square_heigh / 2;
 		}
 	    }
 
@@ -183,13 +183,13 @@ void process_input_events()
         case SDL_MOUSEBUTTONDOWN:
         {
             // print_mouse_button_event(e);
-	    for(size_t i = 0; i < pieces.size(); i++)
+	    for(size_t i = 0; i < sprites.size(); i++)
 	    {
-		if(is_hitting_rect(pieces[i].rect, e.button.x, e.button.y))
+		if(is_hitting_rect(sprites[i].rect, e.button.x, e.button.y))
 		{
-		    pieces[i].rect.x = e.motion.x - square_width / 2;
-		    pieces[i].rect.y = e.motion.y - square_heigh / 2;
-		    pieces[i].is_dragged = true;
+		    sprites[i].rect.x = e.motion.x - square_width / 2;
+		    sprites[i].rect.y = e.motion.y - square_heigh / 2;
+		    sprites[i].is_dragged = true;
 		}
 	    }
             break;
@@ -197,17 +197,17 @@ void process_input_events()
         case SDL_MOUSEBUTTONUP:
         {
 	    bool found = false;
-	    for(size_t i = 0; i < pieces.size(); i++)
+	    for(size_t i = 0; i < sprites.size(); i++)
 	    {
-		if(pieces[i].is_dragged)
+		if(sprites[i].is_dragged)
 		{
 		    assert(!found);
 		    found = true;
-		    pieces[i].is_dragged = false;
-		    pieces[i].orig_square = detect_square(e.button.x, e.button.y);
+		    sprites[i].is_dragged = false;
+		    sprites[i].orig_square = detect_square(e.button.x, e.button.y);
 		    // print_square(s);
-		    pieces[i].rect = square2rect(pieces[i].orig_square);
-		    // print_rect(pieces[i].rect);
+		    sprites[i].rect = square2rect(sprites[i].orig_square);
+		    // print_rect(sprites[i].rect);
 		}
 	    }
 	    // print_mouse_button_event(e);
@@ -253,21 +253,21 @@ void paint_chess_board()
     assertInvariants();
 }
 
-void paint_pieces()
+void paint_sprites()
 {
     assertInvariants();
-    for(auto piece : pieces)
+    for(auto sprite : sprites)
     {
-	if(piece.is_dragged)
+	if(sprite.is_dragged)
 	    continue;
-	SDL_RenderCopy(ren, piece.tex, nullptr, &piece.rect);
+	SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
 
-    for(auto piece : pieces)
+    for(auto sprite : sprites)
     {
-	if(!piece.is_dragged)
+	if(!sprite.is_dragged)
 	    continue;
-	SDL_RenderCopy(ren, piece.tex, nullptr, &piece.rect);
+	SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
 
     assertInvariants();
@@ -307,7 +307,7 @@ void exit_failure()
     exit(EXIT_FAILURE);
 }
 
-void initPiece(struct square square, string img_filename)
+void initSprite(struct square square, string img_filename)
 {
     SDL_Surface *surface = IMG_Load(img_filename.c_str());
     if(!surface) {
@@ -323,11 +323,11 @@ void initPiece(struct square square, string img_filename)
     }
     textures.push_back(texture);
 
-    struct piece piece;
-    piece.tex = texture;
-    piece.orig_square = square;
-    piece.rect = square2rect(piece.orig_square);
-    pieces.push_back(piece);
+    struct sprite sprite;
+    sprite.tex = texture;
+    sprite.orig_square = square;
+    sprite.rect = square2rect(sprite.orig_square);
+    sprites.push_back(sprite);
 }
 
 void initWindowIcon()
@@ -344,7 +344,7 @@ void initWindowIcon()
     SDL_SetWindowIcon(display, icon);
 }
 
-void initPieces()
+void initSprites()
 {
     assert(ren);
 
@@ -353,47 +353,47 @@ void initPieces()
     for(uint8_t i = 0; i < 8; i++)
     {
 	square = {6, i};
-	initPiece(square, "./Chess_plt60.png");
+	initSprite(square, "./Chess_plt60.png");
 	square = {1, i};
-	initPiece(square, "./Chess_pdt60.png");
+	initSprite(square, "./Chess_pdt60.png");
     }
 
     square = {7, 0};
-    initPiece(square, "./Chess_rlt60.png");
+    initSprite(square, "./Chess_rlt60.png");
     square = {7, 7};
-    initPiece(square, "./Chess_rlt60.png");
+    initSprite(square, "./Chess_rlt60.png");
     square = {0, 0};
-    initPiece(square, "./Chess_rdt60.png");
+    initSprite(square, "./Chess_rdt60.png");
     square = {0, 7};
-    initPiece(square, "./Chess_rdt60.png");
+    initSprite(square, "./Chess_rdt60.png");
 
     square = {7, 1};
-    initPiece(square, "./Chess_nlt60.png");
+    initSprite(square, "./Chess_nlt60.png");
     square = {7, 6};
-    initPiece(square, "./Chess_nlt60.png");
+    initSprite(square, "./Chess_nlt60.png");
     square = {0, 1};
-    initPiece(square, "./Chess_ndt60.png");
+    initSprite(square, "./Chess_ndt60.png");
     square = {0, 6};
-    initPiece(square, "./Chess_ndt60.png");
+    initSprite(square, "./Chess_ndt60.png");
 
     square = {7, 2};
-    initPiece(square, "./Chess_blt60.png");
+    initSprite(square, "./Chess_blt60.png");
     square = {7, 5};
-    initPiece(square, "./Chess_blt60.png");
+    initSprite(square, "./Chess_blt60.png");
     square = {0, 2};
-    initPiece(square, "./Chess_bdt60.png");
+    initSprite(square, "./Chess_bdt60.png");
     square = {0, 5};
-    initPiece(square, "./Chess_bdt60.png");
+    initSprite(square, "./Chess_bdt60.png");
 
     square = {7, 3};
-    initPiece(square, "./Chess_qlt60.png");
+    initSprite(square, "./Chess_qlt60.png");
     square = {0, 3};
-    initPiece(square, "./Chess_qdt60.png");
+    initSprite(square, "./Chess_qdt60.png");
 
     square = {7, 4};
-    initPiece(square, "./Chess_klt60.png");
+    initSprite(square, "./Chess_klt60.png");
     square = {0, 4};
-    initPiece(square, "./Chess_kdt60.png");
+    initSprite(square, "./Chess_kdt60.png");
 
     assertInvariants();
 }
@@ -431,7 +431,7 @@ int main()
     initWindowIcon();
     SDL_ShowWindow(display);
 
-    initPieces();
+    initSprites();
 
     while(!quit)
     {
@@ -441,7 +441,7 @@ int main()
 	SDL_RenderClear(ren);
 
         paint_chess_board();
-	paint_pieces();
+	paint_sprites();
 
 	SDL_RenderPresent(ren);
 	assert(display);
