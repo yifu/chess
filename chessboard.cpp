@@ -205,26 +205,39 @@ int main()
         SDL_Event e;
         if(SDL_PollEvent(&e))
         {
-            if(e.type == SDL_QUIT)
+	    switch(e.type)
+	    {
+            case SDL_QUIT:
             {
                 printf("quit\n");
                 quit = true;
+		break;
             }
-            else if(e.type == SDL_KEYDOWN)
+            case SDL_KEYDOWN:
             {
                 printf("key down %d\n", e.key.keysym.sym);
                 if(e.key.keysym.sym == SDLK_ESCAPE)
                     quit = true;
+		break;
             }
-	    else if(e.type == SDL_MOUSEMOTION)
+	    case SDL_MOUSEMOTION:
 	    {
 		print_mouse_motion(e);
 		pawn_rect.x = e.motion.x - square_width / 2;
 		pawn_rect.y = e.motion.y - square_heigh / 2;
+		break;
 	    }
-	    else if(e.type == SDL_MOUSEBUTTONUP || e.type == SDL_MOUSEBUTTONDOWN)
+	    case SDL_MOUSEBUTTONUP:
+	    case SDL_MOUSEBUTTONDOWN:
 	    {
 		print_mouse_button_event(e);
+		break;
+	    }
+	    default:
+	    {
+		printf("e.type=%d\n", e.type);
+		break;
+	    }
 	    }
         }
         paint_chess_board();
