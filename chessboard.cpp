@@ -21,8 +21,6 @@ bool is_pawn_dragged = false;
 
 int square_width, square_heigh;
 
-struct timespec last_time;
-
 struct square
 {
     uint8_t row, col;
@@ -283,14 +281,6 @@ int main()
     pawn_rect.x = pawn_rect.y = 0;
     pawn_rect.w = square_width;
     pawn_rect.h = square_heigh;
-
-    res = clock_gettime(CLOCK_MONOTONIC_RAW, &last_time);
-    if(res == -1)
-    {
-        perror("clock_gettime():");
-        res = 1;
-        exit(EXIT_FAILURE);
-    }
 
     while(!quit)
     {
