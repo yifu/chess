@@ -275,8 +275,18 @@ void paint_pieces()
     assertInvariants();
     for(auto piece : pieces)
     {
+	if(piece.is_dragged)
+	    continue;
 	SDL_RenderCopy(ren, piece.tex, nullptr, &piece.rect);
     }
+
+    for(auto piece : pieces)
+    {
+	if(!piece.is_dragged)
+	    continue;
+	SDL_RenderCopy(ren, piece.tex, nullptr, &piece.rect);
+    }
+
     assertInvariants();
 }
 
