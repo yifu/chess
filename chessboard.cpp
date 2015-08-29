@@ -38,11 +38,11 @@ struct square
     uint8_t row, col;
 };
 
-square detect_square(Sint32 x, Sint32 y)
+struct square detect_square(Sint32 x, Sint32 y)
 {
     // TODO If player is black, then the coordinates are inversed.
 
-    square result;
+    struct square result;
     result.row = y / square_heigh;
     result.col = x / square_width;
     assert(result.row <= 7);
@@ -50,19 +50,19 @@ square detect_square(Sint32 x, Sint32 y)
     return result;
 }
 
-void print_square(square s)
+void print_square(struct square square)
 {
-    printf("square={row=%d,col=%d}\n", s.row, s.col);
+    printf("square={row=%d,col=%d}\n", square.row, square.col);
 }
 
-SDL_Rect square2rect(square s)
+SDL_Rect square2rect(struct square square)
 {
-    assert(s.row <= 7);
-    assert(s.col <= 7);
+    assert(square.row <= 7);
+    assert(square.col <= 7);
 
     SDL_Rect rect;
-    rect.x = s.col * square_width;
-    rect.y = s.row * square_heigh;
+    rect.x = square.col * square_width;
+    rect.y = square.row * square_heigh;
     rect.w = square_width;
     rect.h = square_heigh;
     return rect;
@@ -197,9 +197,9 @@ void process_input_events()
 		    assert(!found);
 		    found = true;
 		    pieces[i].is_dragged = false;
-		    square s = detect_square(e.button.x, e.button.y);
+		    struct square square = detect_square(e.button.x, e.button.y);
 		    // print_square(s);
-		    SDL_Rect rect = square2rect(s);
+		    SDL_Rect rect = square2rect(square);
 		    pieces[i].rect = rect;
 		    // print_rect(pieces[i].rect);
 		}
