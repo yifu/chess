@@ -273,9 +273,9 @@ void paint_chess_board()
 void paint_pieces()
 {
     assertInvariants();
-    for(auto p : pieces)
+    for(auto piece : pieces)
     {
-	SDL_RenderCopy(ren, p.tex, nullptr, &p.rect);
+	SDL_RenderCopy(ren, piece.tex, nullptr, &piece.rect);
     }
     assertInvariants();
 }
