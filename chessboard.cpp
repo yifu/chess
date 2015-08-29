@@ -9,6 +9,7 @@
 #include <SDL2/SDL_image.h>
 
 #include "utils.hpp"
+#include "game.hpp"
 
 using namespace std;
 
@@ -22,11 +23,6 @@ vector<SDL_Surface*> surfaces;
 
 int square_width, square_heigh;
 
-struct square
-{
-    uint8_t row, col;
-};
-
 struct square detect_square(Sint32 x, Sint32 y)
 {
     // TODO If player is black, then the coordinates are inversed.
@@ -37,11 +33,6 @@ struct square detect_square(Sint32 x, Sint32 y)
     assert(result.row <= 7);
     assert(result.col <= 7);
     return result;
-}
-
-void print_square(struct square square)
-{
-    printf("square={row=%d,col=%d}\n", square.row, square.col);
 }
 
 SDL_Rect square2rect(struct square square)
@@ -228,6 +219,10 @@ void paint_chess_board()
     SDL_Rect dst;
 
     assertInvariants();
+
+    // TODO BIG REFACTORING. We must use the list from the game, and
+    // re-generate the sprites from this list, at each turn of the
+    // game loop.
 
     dst.x = dst.y = 0;
     dst.w = square_width;
