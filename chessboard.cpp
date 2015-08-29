@@ -33,7 +33,7 @@ bool is_hitting_rect(SDL_Rect rect, Sint32 x, Sint32 y)
 
 vector<struct piece> pieces;
 
-SDL_Texture *pawn = nullptr;
+SDL_Texture *tex = nullptr;
 
 int square_width, square_heigh;
 
@@ -290,8 +290,8 @@ int main()
         goto clean;
     }
 
-    pawn = SDL_CreateTextureFromSurface(ren, img);
-    if(!pawn) {
+    tex = SDL_CreateTextureFromSurface(ren, img);
+    if(!tex) {
         cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
         res = 1;
         goto clean;
@@ -305,7 +305,7 @@ int main()
     square_width = viewport.w / 8;
     square_heigh = viewport.h / 8;
 
-    p.tex = pawn;
+    p.tex = tex;
     p.rect = { 100, 100, square_heigh, square_heigh };
     pieces.push_back(p);
 
@@ -325,8 +325,8 @@ int main()
     printf("bye!\n");
 
  clean:
-    if(pawn)
-        SDL_DestroyTexture(pawn);
+    if(tex)
+        SDL_DestroyTexture(tex);
     if(img)
         SDL_FreeSurface(img);
     if(ren)
