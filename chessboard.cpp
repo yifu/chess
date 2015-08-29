@@ -141,9 +141,26 @@ uint64_t substract_time(struct timespec l, struct timespec r)
     return result;
 }
 
+void assertInvariants()
+{
+    int dragged_piece_cnt = 0;
+    for(auto piece : pieces)
+    {
+	if(piece.is_dragged)
+	{
+	    dragged_piece_cnt++;
+	    continue;
+	}
+	assert(piece.rect == square2rect(piece.orig_square));
+    }
+    assert(dragged_piece_cnt == 0 || dragged_piece_cnt == 1);
+}
+
 void process_input_events()
 {
     SDL_Event e;
+    assertInvariants();
+
     if(SDL_PollEvent(&e))
     {
         switch(e.type)
@@ -220,11 +237,14 @@ void process_input_events()
         }
         }
     }
+    assertInvariants();
 }
 
 void paint_chess_board()
 {
     SDL_Rect dst;
+
+    assertInvariants();
 
     dst.x = dst.y = 0;
     dst.w = square_width;
@@ -247,14 +267,17 @@ void paint_chess_board()
         }
         dst.y += dst.h;
     }
+    assertInvariants();
 }
 
 void paint_pieces()
 {
+    assertInvariants();
     for(auto p : pieces)
     {
 	SDL_RenderCopy(ren, p.tex, nullptr, &p.rect);
     }
+    assertInvariants();
 }
 
 int main()
