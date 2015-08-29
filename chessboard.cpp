@@ -325,34 +325,41 @@ void exit_failure()
     exit(EXIT_FAILURE);
 }
 
+void initPiece(uint8_t row, uint8_t col, string img_filename)
+{
+    SDL_Surface *surface = IMG_Load(img_filename.c_str());
+    if(!surface) {
+	cerr << "IMG_Load() error : " << IMG_GetError() << endl;
+	exit_failure();
+    }
+    surfaces.push_back(surface);
+
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(ren, surface);
+    if(!texture) {
+	cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
+	exit_failure();
+    }
+    textures.push_back(texture);
+
+    struct piece piece;
+    piece.tex = texture;
+    piece.orig_square.row = row;
+    piece.orig_square.col = col;
+    piece.rect = square2rect(piece.orig_square);
+    SDL_Rect rect = { col * square_width,
+		      row * square_heigh,
+		      square_width,
+		      square_heigh };
+    assert(piece.rect == rect);
+    pieces.push_back(piece);
+}
+
 void initPieces()
 {
     assert(ren);
     for(int i = 0; i < 8; i++)
     {
-	SDL_Surface *surface = IMG_Load("./Chess_plt60.png");
-	if(!surface) {
-	    cerr << "IMG_Load() error : " << IMG_GetError() << endl;
-	    exit_failure();
-	}
-	surfaces.push_back(surface);
-
-	SDL_Texture *texture = SDL_CreateTextureFromSurface(ren, surface);
-	if(!texture) {
-	    cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
-	    exit_failure();
-	}
-	textures.push_back(texture);
-
-	struct piece piece;
-	piece.tex = texture;
-	piece.orig_square.row = 6;
-	piece.orig_square.col = i;
-	piece.rect = square2rect(piece.orig_square);
-	SDL_Rect rect = { i * square_width, square_heigh * 6,
-			  square_width, square_heigh };
-	assert(piece.rect == rect);
-	pieces.push_back(piece);
+	initPiece(6, i, "./Chess_plt60.png");
     }
     assertInvariants();
 }
