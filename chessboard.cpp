@@ -294,15 +294,15 @@ void initPieces()
 {
     for(int i = 0; i < 8; i++)
     {
-	piece p;
-	p.tex = tex;
-	p.orig_square.row = 6;
-	p.orig_square.col = i;
-	p.rect = square2rect(p.orig_square);
+	struct piece piece;
+	piece.tex = tex;
+	piece.orig_square.row = 6;
+	piece.orig_square.col = i;
+	piece.rect = square2rect(piece.orig_square);
 	SDL_Rect rect = { i * square_width, square_heigh * 6,
 			  square_width, square_heigh };
-	assert(p.rect == rect);
-	pieces.push_back(p);
+	assert(piece.rect == rect);
+	pieces.push_back(piece);
     }
 }
 
