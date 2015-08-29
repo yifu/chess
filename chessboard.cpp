@@ -395,10 +395,8 @@ void initSprites()
 
 int main()
 {
-    constexpr Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
-    SDL_Rect viewport;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
@@ -413,12 +411,14 @@ int main()
 	exit_failure();
     }
 
+    constexpr Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
     ren = SDL_CreateRenderer(display, -1/*index*/, renderer_flags);
     if(!ren) {
         cerr << "SDL_CreateRenderer() error :" << SDL_GetError() << "." << endl;
 	exit_failure();
     }
 
+    SDL_Rect viewport;
     SDL_RenderGetViewport(ren, &viewport);
     square_width = viewport.w / 8;
     square_heigh = viewport.h / 8;
