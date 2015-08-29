@@ -353,11 +353,11 @@ void initPieces()
     assert(ren);
     for(uint8_t i = 0; i < 8; i++)
     {
-	struct square square = {1, i};
-	initPiece(square, "./Chess_pdt60.png");
-
 	square = {6, i};
 	initPiece(square, "./Chess_plt60.png");
+
+	square = {1, i};
+	initPiece(square, "./Chess_pdt60.png");
     }
     assertInvariants();
 }
