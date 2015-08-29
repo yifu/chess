@@ -103,8 +103,6 @@ void paint_chess_board()
 {
     SDL_Rect dst;
 
-    int res;
-
     SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
     SDL_RenderClear(ren);
 
@@ -159,7 +157,6 @@ int main()
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
     bool quit = false;
-    int i = 0;
     SDL_Rect viewport;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
@@ -282,4 +279,4 @@ int main()
     return res;
 }
 
-// g++ -ggdb -std=c++11 chessboard.cpp $(sdl2-config --cflags --libs) -lSDL2_image
+// g++ -Wall -Wextra -ggdb -std=c++11 chessboard.cpp $(sdl2-config --cflags --libs) -lSDL2_image
