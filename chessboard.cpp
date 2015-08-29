@@ -21,6 +21,42 @@ int square_width, square_heigh;
 
 struct timespec last_time;
 
+struct square
+{
+    uint8_t row, col;
+};
+
+square detect_square(Sint32 x, Sint32 y)
+{
+    // TODO If player is black, then the coordinates are inversed.
+
+    square result;
+    result.row = y / square_heigh;
+    result.col = x / square_width;
+    assert(result.row <= 7);
+    assert(result.col <= 7);
+    return result;
+}
+
+void print_square(square s)
+{
+    printf("square={row=%d,col=%d}\n", s.row, s.col);
+}
+
+SDL_Rect square2rect(square s)
+{
+    assert(s.row <= 7);
+    assert(s.col <= 7);
+
+    SDL_Rect rect;
+    rect.x = s.col * square_width;
+    rect.y = s.row * square_heigh;
+    rect.w = square_width;
+    rect.h = square_heigh;
+    return rect;
+}
+
+
 void print_rect(SDL_Rect r)
 {
     printf("r.x=%d, r.y=%d, r.w=%d, r.h=%d.\n",
@@ -252,6 +288,11 @@ int main()
 	    case SDL_MOUSEBUTTONUP:
 	    {
 		is_pawn_dragged = false;
+		square s = detect_square(e.button.x, e.button.y);
+		print_square(s);
+		SDL_Rect rect = square2rect(s);
+		pawn_rect = rect;
+		print_rect(pawn_rect);
 		print_mouse_button_event(e);
 		break;
 	    }
