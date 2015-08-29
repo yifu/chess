@@ -9,6 +9,8 @@
 
 using namespace std;
 
+bool quit = false;
+
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
 SDL_Surface *img = nullptr;
@@ -71,29 +73,29 @@ void print_timespec(struct timespec t)
 void print_mouse_motion(SDL_Event e)
 {
     printf("e.motion={type=%u,timestamp=%u,winid=%u,which=%u,state=%u,x=%d,y=%d,xrel=%d,yrel=%d}\n",
-	   e.motion.type,
-	   e.motion.timestamp,
-	   e.motion.windowID,
-	   e.motion.which,
-	   e.motion.state,
-	   e.motion.x,
-	   e.motion.y,
-	   e.motion.xrel,
-	   e.motion.yrel);
+           e.motion.type,
+           e.motion.timestamp,
+           e.motion.windowID,
+           e.motion.which,
+           e.motion.state,
+           e.motion.x,
+           e.motion.y,
+           e.motion.xrel,
+           e.motion.yrel);
 }
 
 void print_mouse_button_event(SDL_Event e)
 {
     printf("e.button={type=%u,timestamp=%u,winid=%u,which=%u,button=%d,state=%u,clicks=%d,x=%d,y=%d}\n",
-	   e.button.type,
-	   e.button.timestamp,
-	   e.button.windowID,
-	   e.button.which,
-	   e.button.button,
-	   e.button.state,
-	   e.button.clicks,
-	   e.button.x,
-	   e.button.y);
+           e.button.type,
+           e.button.timestamp,
+           e.button.windowID,
+           e.button.which,
+           e.button.button,
+           e.button.state,
+           e.button.clicks,
+           e.button.x,
+           e.button.y);
 }
 
 uint64_t substract_time(struct timespec l, struct timespec r)
@@ -123,9 +125,9 @@ uint64_t substract_time(struct timespec l, struct timespec r)
 bool on_pawn_clicked(Sint32 x, Sint32 y)
 {
     return x >= pawn_rect.x &&
-	x <= pawn_rect.x + pawn_rect.w &&
-	y >= pawn_rect.y &&
-	y <= pawn_rect.y + pawn_rect.h;
+        x <= pawn_rect.x + pawn_rect.w &&
+        y >= pawn_rect.y &&
+        y <= pawn_rect.y + pawn_rect.h;
 }
 
 void drag_pawn(Sint32 x, Sint32 y)
@@ -133,6 +135,60 @@ void drag_pawn(Sint32 x, Sint32 y)
     pawn_rect.x = x - square_width / 2;
     pawn_rect.y = y - square_heigh / 2;
     is_pawn_dragged = true;
+}
+
+void process_input_events()
+{
+    SDL_Event e;
+    if(SDL_PollEvent(&e))
+    {
+        switch(e.type)
+        {
+        case SDL_QUIT:
+        {
+            printf("quit\n");
+            quit = true;
+            break;
+        }
+        case SDL_KEYDOWN:
+        {
+            printf("key down %d\n", e.key.keysym.sym);
+            if(e.key.keysym.sym == SDLK_ESCAPE)
+                quit = true;
+            break;
+        }
+        case SDL_MOUSEMOTION:
+        {
+            print_mouse_motion(e);
+            if(is_pawn_dragged)
+                drag_pawn(e.motion.x, e.motion.y);
+            break;
+        }
+        case SDL_MOUSEBUTTONDOWN:
+        {
+            print_mouse_button_event(e);
+            if(on_pawn_clicked(e.button.x, e.button.y))
+                drag_pawn(e.button.x, e.button.y);
+            break;
+        }
+        case SDL_MOUSEBUTTONUP:
+        {
+            is_pawn_dragged = false;
+            square s = detect_square(e.button.x, e.button.y);
+            print_square(s);
+            SDL_Rect rect = square2rect(s);
+            pawn_rect = rect;
+            print_rect(pawn_rect);
+            print_mouse_button_event(e);
+            break;
+        }
+        default:
+        {
+            printf("e.type=%d\n", e.type);
+            break;
+        }
+        }
+    }
 }
 
 void paint_chess_board()
@@ -192,7 +248,6 @@ int main()
     constexpr Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
-    bool quit = false;
     SDL_Rect viewport;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
@@ -253,56 +308,7 @@ int main()
 
     while(!quit)
     {
-        SDL_Event e;
-        if(SDL_PollEvent(&e))
-        {
-	    switch(e.type)
-	    {
-            case SDL_QUIT:
-            {
-                printf("quit\n");
-                quit = true;
-		break;
-            }
-            case SDL_KEYDOWN:
-            {
-                printf("key down %d\n", e.key.keysym.sym);
-                if(e.key.keysym.sym == SDLK_ESCAPE)
-                    quit = true;
-		break;
-            }
-	    case SDL_MOUSEMOTION:
-	    {
-		print_mouse_motion(e);
-		if(is_pawn_dragged)
-		    drag_pawn(e.motion.x, e.motion.y);
-		break;
-	    }
-	    case SDL_MOUSEBUTTONDOWN:
-	    {
-		print_mouse_button_event(e);
-		if(on_pawn_clicked(e.button.x, e.button.y))
-		    drag_pawn(e.button.x, e.button.y);
-		break;
-	    }
-	    case SDL_MOUSEBUTTONUP:
-	    {
-		is_pawn_dragged = false;
-		square s = detect_square(e.button.x, e.button.y);
-		print_square(s);
-		SDL_Rect rect = square2rect(s);
-		pawn_rect = rect;
-		print_rect(pawn_rect);
-		print_mouse_button_event(e);
-		break;
-	    }
-	    default:
-	    {
-		printf("e.type=%d\n", e.type);
-		break;
-	    }
-	    }
-        }
+        process_input_events();
         paint_chess_board();
     }
     printf("bye!\n");
