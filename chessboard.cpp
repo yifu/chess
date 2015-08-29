@@ -359,6 +359,7 @@ void initPieces()
     assert(ren);
     for(int i = 0; i < 8; i++)
     {
+	initPiece(1, i, "./Chess_pdt60.png");
 	initPiece(6, i, "./Chess_plt60.png");
     }
     assertInvariants();
