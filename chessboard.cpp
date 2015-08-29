@@ -172,13 +172,16 @@ void process_input_events()
         }
         case SDL_MOUSEBUTTONUP:
         {
-            is_pawn_dragged = false;
-            square s = detect_square(e.button.x, e.button.y);
-            print_square(s);
-            SDL_Rect rect = square2rect(s);
-            pawn_rect = rect;
-            print_rect(pawn_rect);
-            print_mouse_button_event(e);
+	    if(is_pawn_dragged)
+	    {
+		is_pawn_dragged = false;
+		square s = detect_square(e.button.x, e.button.y);
+		print_square(s);
+		SDL_Rect rect = square2rect(s);
+		pawn_rect = rect;
+		print_rect(pawn_rect);
+	    }
+	    print_mouse_button_event(e);
             break;
         }
         default:
