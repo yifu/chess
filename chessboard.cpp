@@ -3,6 +3,7 @@
 #include <time.h>
 #include <assert.h>
 #include <stdint.h>
+#include <vector>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -14,8 +15,25 @@ bool quit = false;
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
 SDL_Surface *img = nullptr;
-SDL_Texture *pawn = nullptr;
 
+struct piece
+{
+    SDL_Texture *tex = nullptr;
+    SDL_Rect rect = {0,0,0,0};
+    bool is_dragged = false;
+};
+
+bool is_hitting_rect(SDL_Rect rect, Sint32 x, Sint32 y)
+{
+    return x >= rect.x &&
+        x <= rect.x + rect.w &&
+        y >= rect.y &&
+        y <= rect.y + rect.h;
+}
+
+vector<struct piece> pieces;
+
+SDL_Texture *pawn = nullptr;
 SDL_Rect pawn_rect;
 bool is_pawn_dragged = false;
 
@@ -127,13 +145,6 @@ bool on_pawn_clicked(Sint32 x, Sint32 y)
         y <= pawn_rect.y + pawn_rect.h;
 }
 
-void drag_pawn(Sint32 x, Sint32 y)
-{
-    pawn_rect.x = x - square_width / 2;
-    pawn_rect.y = y - square_heigh / 2;
-    is_pawn_dragged = true;
-}
-
 void process_input_events()
 {
     SDL_Event e;
@@ -156,30 +167,55 @@ void process_input_events()
         }
         case SDL_MOUSEMOTION:
         {
-            print_mouse_motion(e);
-            if(is_pawn_dragged)
-                drag_pawn(e.motion.x, e.motion.y);
+            // print_mouse_motion(e);
+	    bool found = false; // TODO int count?
+	    for(size_t i = 0; i < pieces.size(); i++)
+	    {
+		if(pieces[i].is_dragged)
+		{
+		    assert(!found);
+		    found = true;
+		    // TODO Implement a function: updateDraggedXY() or updateDraggedPiecePos()...
+		    pieces[i].rect.x = e.motion.x - square_width / 2;
+		    pieces[i].rect.y = e.motion.y - square_heigh / 2;
+		}
+	    }
+
+
             break;
         }
         case SDL_MOUSEBUTTONDOWN:
         {
-            print_mouse_button_event(e);
-            if(on_pawn_clicked(e.button.x, e.button.y))
-                drag_pawn(e.button.x, e.button.y);
+            // print_mouse_button_event(e);
+	    for(size_t i = 0; i < pieces.size(); i++)
+	    {
+		if(is_hitting_rect(pieces[i].rect, e.button.x, e.button.y))
+		{
+		    pieces[i].rect.x = e.motion.x - square_width / 2;
+		    pieces[i].rect.y = e.motion.y - square_heigh / 2;
+		    pieces[i].is_dragged = true;
+		}
+	    }
             break;
         }
         case SDL_MOUSEBUTTONUP:
         {
-	    if(is_pawn_dragged)
+	    bool found = false;
+	    for(size_t i = 0; i < pieces.size(); i++)
 	    {
-		is_pawn_dragged = false;
-		square s = detect_square(e.button.x, e.button.y);
-		print_square(s);
-		SDL_Rect rect = square2rect(s);
-		pawn_rect = rect;
-		print_rect(pawn_rect);
+		if(pieces[i].is_dragged)
+		{
+		    assert(!found);
+		    found = true;
+		    pieces[i].is_dragged = false;
+		    square s = detect_square(e.button.x, e.button.y);
+		    // print_square(s);
+		    SDL_Rect rect = square2rect(s);
+		    pieces[i].rect = rect;
+		    // print_rect(pieces[i].rect);
+		}
 	    }
-	    print_mouse_button_event(e);
+	    // print_mouse_button_event(e);
             break;
         }
         default:
@@ -194,9 +230,6 @@ void process_input_events()
 void paint_chess_board()
 {
     SDL_Rect dst;
-
-    SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
-    SDL_RenderClear(ren);
 
     dst.x = dst.y = 0;
     dst.w = square_width;
@@ -220,10 +253,16 @@ void paint_chess_board()
         dst.y += dst.h;
     }
 
-    SDL_RenderCopy(ren, pawn, nullptr, &pawn_rect);
+    // SDL_RenderCopy(ren, pawn, nullptr, &pawn_rect);
 
-    SDL_RenderPresent(ren);
-    SDL_UpdateWindowSurface(display);
+}
+
+void paint_pieces()
+{
+    for(auto p : pieces)
+    {
+	SDL_RenderCopy(ren, p.tex, nullptr, &p.rect);
+    }
 }
 
 int main()
@@ -233,6 +272,7 @@ int main()
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
     SDL_Rect viewport;
+    piece p;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
@@ -282,10 +322,22 @@ int main()
     pawn_rect.w = square_width;
     pawn_rect.h = square_heigh;
 
+    p.tex = pawn;
+    p.rect = { 100, 100, square_heigh, square_heigh };
+    pieces.push_back(p);
+
     while(!quit)
     {
         process_input_events();
+
+	SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
+	SDL_RenderClear(ren);
+
         paint_chess_board();
+	paint_pieces();
+
+	SDL_RenderPresent(ren);
+	SDL_UpdateWindowSurface(display);
     }
     printf("bye!\n");
 
