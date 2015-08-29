@@ -29,6 +29,34 @@ void print_timespec(struct timespec t)
     printf("tv_sec=%lu, tv_nsec=%lu.\n", t.tv_sec, t.tv_nsec);
 }
 
+void print_mouse_motion(SDL_Event e)
+{
+    printf("e.motion={type=%u,timestamp=%u,winid=%u,which=%u,state=%u,x=%d,y=%d,xrel=%d,yrel=%d}\n",
+	   e.motion.type,
+	   e.motion.timestamp,
+	   e.motion.windowID,
+	   e.motion.which,
+	   e.motion.state,
+	   e.motion.x,
+	   e.motion.y,
+	   e.motion.xrel,
+	   e.motion.yrel);
+}
+
+void print_mouse_button_event(SDL_Event e)
+{
+    printf("e.button={type=%u,timestamp=%u,winid=%u,which=%u,button=%d,state=%u,clicks=%d,x=%d,y=%d}\n",
+	   e.button.type,
+	   e.button.timestamp,
+	   e.button.windowID,
+	   e.button.which,
+	   e.button.button,
+	   e.button.state,
+	   e.button.clicks,
+	   e.button.x,
+	   e.button.y);
+}
+
 uint64_t substract_time(struct timespec l, struct timespec r)
 {
     assert(l.tv_sec > r.tv_sec ||
@@ -188,6 +216,16 @@ int main()
                 if(e.key.keysym.sym == SDLK_ESCAPE)
                     quit = true;
             }
+	    else if(e.type == SDL_MOUSEMOTION)
+	    {
+		print_mouse_motion(e);
+		pawn_rect.x = e.motion.x - square_width / 2;
+		pawn_rect.y = e.motion.y - square_heigh / 2;
+	    }
+	    else if(e.type == SDL_MOUSEBUTTONUP || e.type == SDL_MOUSEBUTTONDOWN)
+	    {
+		print_mouse_button_event(e);
+	    }
         }
         paint_chess_board();
     }
