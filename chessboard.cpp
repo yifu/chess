@@ -13,7 +13,10 @@ SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
 SDL_Surface *img = nullptr;
 SDL_Texture *pawn = nullptr;
+
 SDL_Rect pawn_rect;
+bool is_pawn_dragged = false;
+
 int square_width, square_heigh;
 
 struct timespec last_time;
@@ -79,6 +82,21 @@ uint64_t substract_time(struct timespec l, struct timespec r)
         result = nsec;
     }
     return result;
+}
+
+bool on_pawn_clicked(Sint32 x, Sint32 y)
+{
+    return x >= pawn_rect.x &&
+	x <= pawn_rect.x + pawn_rect.w &&
+	y >= pawn_rect.y &&
+	y <= pawn_rect.y + pawn_rect.h;
+}
+
+void drag_pawn(Sint32 x, Sint32 y)
+{
+    pawn_rect.x = x - square_width / 2;
+    pawn_rect.y = y - square_heigh / 2;
+    is_pawn_dragged = true;
 }
 
 void paint_chess_board()
@@ -223,17 +241,20 @@ int main()
 	    case SDL_MOUSEMOTION:
 	    {
 		print_mouse_motion(e);
-		// pawn_rect.x = e.motion.x - square_width / 2;
-		// pawn_rect.y = e.motion.y - square_heigh / 2;
+		if(is_pawn_dragged)
+		    drag_pawn(e.motion.x, e.motion.y);
 		break;
 	    }
 	    case SDL_MOUSEBUTTONDOWN:
 	    {
 		print_mouse_button_event(e);
+		if(on_pawn_clicked(e.button.x, e.button.y))
+		    drag_pawn(e.button.x, e.button.y);
 		break;
 	    }
 	    case SDL_MOUSEBUTTONUP:
 	    {
+		is_pawn_dragged = false;
 		print_mouse_button_event(e);
 		break;
 	    }
