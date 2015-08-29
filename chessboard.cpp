@@ -305,9 +305,13 @@ int main()
     square_width = viewport.w / 8;
     square_heigh = viewport.h / 8;
 
-    p.tex = tex;
-    p.rect = { 100, 100, square_heigh, square_heigh };
-    pieces.push_back(p);
+    for(int i = 0; i < 8; i++)
+    {
+	p.tex = tex;
+	p.rect = { i * square_width, square_heigh * 6,
+		   square_width, square_heigh };
+	pieces.push_back(p);
+    }
 
     while(!quit)
     {
