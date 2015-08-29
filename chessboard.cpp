@@ -204,10 +204,9 @@ void process_input_events()
 		    assert(!found);
 		    found = true;
 		    pieces[i].is_dragged = false;
-		    struct square square = detect_square(e.button.x, e.button.y);
+		    pieces[i].orig_square = detect_square(e.button.x, e.button.y);
 		    // print_square(s);
-		    SDL_Rect rect = square2rect(square);
-		    pieces[i].rect = rect;
+		    pieces[i].rect = square2rect(pieces[i].orig_square);
 		    // print_rect(pieces[i].rect);
 		}
 	    }
