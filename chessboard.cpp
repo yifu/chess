@@ -15,13 +15,9 @@ bool quit = false;
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
 SDL_Surface *img = nullptr;
+SDL_Texture *tex = nullptr;
 
-struct piece
-{
-    SDL_Texture *tex = nullptr;
-    SDL_Rect rect = {0,0,0,0};
-    bool is_dragged = false;
-};
+int square_width, square_heigh;
 
 bool is_hitting_rect(SDL_Rect rect, Sint32 x, Sint32 y)
 {
@@ -31,11 +27,11 @@ bool is_hitting_rect(SDL_Rect rect, Sint32 x, Sint32 y)
         y <= rect.y + rect.h;
 }
 
-vector<struct piece> pieces;
-
-SDL_Texture *tex = nullptr;
-
-int square_width, square_heigh;
+void print_rect(SDL_Rect r)
+{
+    printf("r.x=%d, r.y=%d, r.w=%d, r.h=%d.\n",
+           r.x, r.y, r.w, r.h);
+}
 
 struct square
 {
@@ -72,11 +68,14 @@ SDL_Rect square2rect(square s)
     return rect;
 }
 
-void print_rect(SDL_Rect r)
+struct piece
 {
-    printf("r.x=%d, r.y=%d, r.w=%d, r.h=%d.\n",
-           r.x, r.y, r.w, r.h);
-}
+    SDL_Texture *tex = nullptr;
+    SDL_Rect rect = {0,0,0,0};
+    bool is_dragged = false;
+};
+
+vector<struct piece> pieces;
 
 void print_timespec(struct timespec t)
 {
