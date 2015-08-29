@@ -223,12 +223,16 @@ int main()
 	    case SDL_MOUSEMOTION:
 	    {
 		print_mouse_motion(e);
-		pawn_rect.x = e.motion.x - square_width / 2;
-		pawn_rect.y = e.motion.y - square_heigh / 2;
+		// pawn_rect.x = e.motion.x - square_width / 2;
+		// pawn_rect.y = e.motion.y - square_heigh / 2;
+		break;
+	    }
+	    case SDL_MOUSEBUTTONDOWN:
+	    {
+		print_mouse_button_event(e);
 		break;
 	    }
 	    case SDL_MOUSEBUTTONUP:
-	    case SDL_MOUSEBUTTONDOWN:
 	    {
 		print_mouse_button_event(e);
 		break;
