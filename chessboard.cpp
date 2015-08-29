@@ -325,7 +325,7 @@ void exit_failure()
     exit(EXIT_FAILURE);
 }
 
-void initPiece(uint8_t row, uint8_t col, string img_filename)
+void initPiece(struct square square, string img_filename)
 {
     SDL_Surface *surface = IMG_Load(img_filename.c_str());
     if(!surface) {
@@ -343,24 +343,21 @@ void initPiece(uint8_t row, uint8_t col, string img_filename)
 
     struct piece piece;
     piece.tex = texture;
-    piece.orig_square.row = row;
-    piece.orig_square.col = col;
+    piece.orig_square = square;
     piece.rect = square2rect(piece.orig_square);
-    SDL_Rect rect = { col * square_width,
-		      row * square_heigh,
-		      square_width,
-		      square_heigh };
-    assert(piece.rect == rect);
     pieces.push_back(piece);
 }
 
 void initPieces()
 {
     assert(ren);
-    for(int i = 0; i < 8; i++)
+    for(uint8_t i = 0; i < 8; i++)
     {
-	initPiece(1, i, "./Chess_pdt60.png");
-	initPiece(6, i, "./Chess_plt60.png");
+	struct square square = {1, i};
+	initPiece(square, "./Chess_pdt60.png");
+
+	square = {6, i};
+	initPiece(square, "./Chess_plt60.png");
     }
     assertInvariants();
 }
