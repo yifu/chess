@@ -304,6 +304,7 @@ void initPieces()
 	assert(piece.rect == rect);
 	pieces.push_back(piece);
     }
+    assertInvariants();
 }
 
 int main()
