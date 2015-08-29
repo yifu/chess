@@ -58,7 +58,6 @@ SDL_Rect square2rect(square s)
     return rect;
 }
 
-
 void print_rect(SDL_Rect r)
 {
     printf("r.x=%d, r.y=%d, r.w=%d, r.h=%d.\n",
@@ -219,22 +218,6 @@ void paint_chess_board()
         }
         dst.y += dst.h;
     }
-
-    // struct timespec new_time;
-    // res = clock_gettime(CLOCK_MONOTONIC_RAW, &new_time);
-    // if(res == -1)
-    // {
-    //     perror("clock_gettime():");
-    //     res = 1;
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // uint64_t diff = substract_time(new_time, last_time);
-    // if(diff > 16*1000000)
-    // {
-    //     pawn_rect.x += 4;
-    //     last_time = new_time;
-    // }
 
     SDL_RenderCopy(ren, pawn, nullptr, &pawn_rect);
 
