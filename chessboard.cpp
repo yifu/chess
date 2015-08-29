@@ -14,8 +14,9 @@ bool quit = false;
 
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
-SDL_Surface *img = nullptr;
-SDL_Texture *tex = nullptr;
+
+vector<SDL_Texture*> textures;
+vector<SDL_Surface*> surfaces;
 
 int square_width, square_heigh;
 
@@ -290,12 +291,61 @@ void paint_pieces()
     assertInvariants();
 }
 
+void clean_up()
+{
+    for(auto texture: textures)
+    {
+	assert(texture);
+	SDL_DestroyTexture(texture);
+    }
+
+    for(auto surface : surfaces)
+    {
+	assert(surface);
+	SDL_FreeSurface(surface);
+    }
+
+    if(ren)
+        SDL_DestroyRenderer(ren);
+
+    if(display)
+        SDL_DestroyWindow(display);
+    SDL_Quit();
+}
+
+void exit_success()
+{
+    clean_up();
+    exit(EXIT_SUCCESS);
+}
+
+void exit_failure()
+{
+    clean_up();
+    exit(EXIT_FAILURE);
+}
+
 void initPieces()
 {
+    assert(ren);
     for(int i = 0; i < 8; i++)
     {
+	SDL_Surface *surface = IMG_Load("./Chess_plt60.png");
+	if(!surface) {
+	    cerr << "IMG_Load() error : " << IMG_GetError() << endl;
+	    exit_failure();
+	}
+	surfaces.push_back(surface);
+
+	SDL_Texture *texture = SDL_CreateTextureFromSurface(ren, surface);
+	if(!texture) {
+	    cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
+	    exit_failure();
+	}
+	textures.push_back(texture);
+
 	struct piece piece;
-	piece.tex = tex;
+	piece.tex = texture;
 	piece.orig_square.row = 6;
 	piece.orig_square.col = i;
 	piece.rect = square2rect(piece.orig_square);
@@ -309,7 +359,6 @@ void initPieces()
 
 int main()
 {
-    int res = 0;
     constexpr Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
@@ -317,8 +366,7 @@ int main()
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
-        res = 1;
-        goto clean;
+	exit_failure();
     }
 
     display = SDL_CreateWindow("Hello world!",
@@ -326,34 +374,14 @@ int main()
                                screenwidth, screenheigh, SDL_WINDOW_SHOWN);
     if(!display) {
         cerr << "SDL_CreateWindow() error : " << SDL_GetError() << "." << endl;
-        res = 1;
-        goto clean;
+	exit_failure();
     }
 
     ren = SDL_CreateRenderer(display, -1/*index*/, renderer_flags);
     if(!ren) {
         cerr << "SDL_CreateRenderer() error :" << SDL_GetError() << "." << endl;
-        res = 1;
-        goto clean;
+	exit_failure();
     }
-
-    img = IMG_Load("./Chess_plt60.png");
-    if(!img) {
-        cerr << "IMG_Load() error : " << IMG_GetError() << endl;
-        res = 1;
-        goto clean;
-    }
-
-    tex = SDL_CreateTextureFromSurface(ren, img);
-    if(!tex) {
-        cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
-        res = 1;
-        goto clean;
-    }
-
-    if(img)
-        SDL_FreeSurface(img);
-    img = nullptr;
 
     SDL_RenderGetViewport(ren, &viewport);
     square_width = viewport.w / 8;
@@ -372,21 +400,12 @@ int main()
 	paint_pieces();
 
 	SDL_RenderPresent(ren);
+	assert(display);
 	SDL_UpdateWindowSurface(display);
     }
     printf("bye!\n");
 
- clean:
-    if(tex)
-        SDL_DestroyTexture(tex);
-    if(img)
-        SDL_FreeSurface(img);
-    if(ren)
-        SDL_DestroyRenderer(ren);
-    if(display)
-        SDL_DestroyWindow(display);
-    SDL_Quit();
-    return res;
+    exit_success();
 }
 
 // g++ -Wall -Wextra -ggdb -std=c++11 chessboard.cpp $(sdl2-config --cflags --libs) -lSDL2_image
