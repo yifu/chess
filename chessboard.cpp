@@ -34,8 +34,6 @@ bool is_hitting_rect(SDL_Rect rect, Sint32 x, Sint32 y)
 vector<struct piece> pieces;
 
 SDL_Texture *pawn = nullptr;
-SDL_Rect pawn_rect;
-bool is_pawn_dragged = false;
 
 int square_width, square_heigh;
 
@@ -135,14 +133,6 @@ uint64_t substract_time(struct timespec l, struct timespec r)
         result = nsec;
     }
     return result;
-}
-
-bool on_pawn_clicked(Sint32 x, Sint32 y)
-{
-    return x >= pawn_rect.x &&
-        x <= pawn_rect.x + pawn_rect.w &&
-        y >= pawn_rect.y &&
-        y <= pawn_rect.y + pawn_rect.h;
 }
 
 void process_input_events()
@@ -252,9 +242,6 @@ void paint_chess_board()
         }
         dst.y += dst.h;
     }
-
-    // SDL_RenderCopy(ren, pawn, nullptr, &pawn_rect);
-
 }
 
 void paint_pieces()
@@ -317,10 +304,6 @@ int main()
     SDL_RenderGetViewport(ren, &viewport);
     square_width = viewport.w / 8;
     square_heigh = viewport.h / 8;
-
-    pawn_rect.x = pawn_rect.y = 0;
-    pawn_rect.w = square_width;
-    pawn_rect.h = square_heigh;
 
     p.tex = pawn;
     p.rect = { 100, 100, square_heigh, square_heigh };
