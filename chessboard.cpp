@@ -290,6 +290,22 @@ void paint_pieces()
     assertInvariants();
 }
 
+void initPieces()
+{
+    for(int i = 0; i < 8; i++)
+    {
+	piece p;
+	p.tex = tex;
+	p.orig_square.row = 6;
+	p.orig_square.col = i;
+	p.rect = square2rect(p.orig_square);
+	SDL_Rect rect = { i * square_width, square_heigh * 6,
+			  square_width, square_heigh };
+	assert(p.rect == rect);
+	pieces.push_back(p);
+    }
+}
+
 int main()
 {
     int res = 0;
@@ -297,7 +313,6 @@ int main()
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
     SDL_Rect viewport;
-    piece p;
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
@@ -343,17 +358,7 @@ int main()
     square_width = viewport.w / 8;
     square_heigh = viewport.h / 8;
 
-    for(int i = 0; i < 8; i++)
-    {
-	p.tex = tex;
-	p.orig_square.row = 6;
-	p.orig_square.col = i;
-	p.rect = square2rect(p.orig_square);
-	SDL_Rect rect = { i * square_width, square_heigh * 6,
-			  square_width, square_heigh };
-	assert(p.rect == rect);
-	pieces.push_back(p);
-    }
+    initPieces();
 
     while(!quit)
     {
