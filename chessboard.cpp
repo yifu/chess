@@ -358,7 +358,6 @@ void initPieces()
     {
 	square = {6, i};
 	initPiece(square, "./Chess_plt60.png");
-
 	square = {1, i};
 	initPiece(square, "./Chess_pdt60.png");
     }
@@ -367,7 +366,6 @@ void initPieces()
     initPiece(square, "./Chess_rlt60.png");
     square = {7, 7};
     initPiece(square, "./Chess_rlt60.png");
-
     square = {0, 0};
     initPiece(square, "./Chess_rdt60.png");
     square = {0, 7};
@@ -377,7 +375,6 @@ void initPieces()
     initPiece(square, "./Chess_nlt60.png");
     square = {7, 6};
     initPiece(square, "./Chess_nlt60.png");
-
     square = {0, 1};
     initPiece(square, "./Chess_ndt60.png");
     square = {0, 6};
@@ -387,7 +384,6 @@ void initPieces()
     initPiece(square, "./Chess_blt60.png");
     square = {7, 5};
     initPiece(square, "./Chess_blt60.png");
-
     square = {0, 2};
     initPiece(square, "./Chess_bdt60.png");
     square = {0, 5};
@@ -395,13 +391,11 @@ void initPieces()
 
     square = {7, 3};
     initPiece(square, "./Chess_qlt60.png");
-
     square = {0, 3};
     initPiece(square, "./Chess_qdt60.png");
 
     square = {7, 4};
     initPiece(square, "./Chess_klt60.png");
-
     square = {0, 4};
     initPiece(square, "./Chess_kdt60.png");
 
