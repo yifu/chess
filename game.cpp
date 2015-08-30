@@ -117,7 +117,10 @@ vector<struct move> generate_pawn_moves(struct game game, size_t pos)
     assert(pos != -1);
     assert(pos < game.pieces.size());
 
-    vector<struct move> moves = generate_usual_pawn_move(game, pos);
+    vector<struct move> moves;
+    vector<struct move> usual_moves = generate_usual_pawn_move(game, pos);
+
+    moves.insert(moves.begin(), usual_moves.begin(), usual_moves.end());
 
     return moves;
 }
