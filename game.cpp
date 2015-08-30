@@ -82,12 +82,15 @@ bool is_square_occupied(struct game game, struct square square)
 
 vector<struct move> generate_pawn_moves(struct game game, size_t pos)
 {
+    assert(pos != -1);
+    assert(pos < game.pieces.size());
+
     vector<struct move> moves;
 
     struct piece pawn = game.pieces[pos];
     struct square src = pawn.square;
-
     struct square dst = src;
+
     if(pawn.color == color::white)
         dst.row++;
     else if(pawn.color == color::black)
