@@ -70,7 +70,7 @@ enum color opponent(enum color c)
     else assert(false);
 }
 
-bool is_square_occupied(struct game game, struct square square)
+bool is_square_clear(struct game game, struct square square)
 {
     for(struct piece piece : game.pieces)
     {
@@ -101,7 +101,7 @@ vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
     if(dst.row < 0 || dst.row > 7)
         return moves;
 
-    if(is_square_occupied(game, dst))
+    if(is_square_clear(game, dst))
         return moves;
 
     // printf("src square = "); print_square(src);
