@@ -362,12 +362,12 @@ vector<struct move> next_moves(struct game game)
         case type::pawn:
             moves = generate_pawn_moves(game, i);
             break;
+        case type::rook:
+            moves = generate_rook_moves(game, i);
+            break;
         case type::knight:
             break;
         case type::bishop:
-            break;
-        case type::rook:
-            moves = generate_rook_moves(game, i);
             break;
         case type::queen:
             break;
