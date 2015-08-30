@@ -51,12 +51,6 @@ vector<struct piece> initial_board = {
     {color::black, type::king, {7, 4}},
 };
 
-struct game init_game()
-{
-    struct game game;
-    return game;
-}
-
 vector<struct game> next_games(struct game game)
 {
     vector<struct game> result;

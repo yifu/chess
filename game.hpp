@@ -47,5 +47,4 @@ struct game
 
 void print_square(struct square square);
 void print_move(struct move move);
-struct game init_game();
 std::vector<struct game> next_games(struct game game);
