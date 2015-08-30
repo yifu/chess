@@ -168,7 +168,6 @@ size_t find_piece_pos(struct game game, struct square square)
 
 vector<struct move> generate_pawn_capturing_move(struct game game, size_t pos)
 {
-    assert(pos != -1);
     assert(pos < game.pieces.size());
 
     vector<struct move> moves;
@@ -213,7 +212,6 @@ vector<struct move> generate_pawn_capturing_move(struct game game, size_t pos)
 
 vector<struct move> generate_pawn_starting_move(struct game game, size_t pos)
 {
-    assert(pos != -1);
     assert(pos < game.pieces.size());
 
     vector<struct move> moves;
@@ -264,7 +262,6 @@ vector<struct move> generate_pawn_starting_move(struct game game, size_t pos)
 
 vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
 {
-    assert(pos != -1);
     assert(pos < game.pieces.size());
 
     vector<struct move> moves;
@@ -296,7 +293,6 @@ vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
 
 vector<struct move> generate_pawn_moves(struct game game, size_t pos)
 {
-    assert(pos != -1);
     assert(pos < game.pieces.size());
 
     vector<struct move> moves;
@@ -321,7 +317,6 @@ struct square& operator += (struct square& l, struct square r)
 
 vector<struct move> generate_rook_moves(struct game game, size_t pos)
 {
-    assert(pos != -1);
     assert(pos < game.pieces.size());
 
     vector<struct move> moves;
