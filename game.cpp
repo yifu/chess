@@ -80,7 +80,7 @@ bool is_square_occupied(struct game game, struct square square)
     return false;
 }
 
-vector<struct move> generate_pawn_moves(struct game game, size_t pos)
+vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
 {
     assert(pos != -1);
     assert(pos < game.pieces.size());
@@ -109,6 +109,16 @@ vector<struct move> generate_pawn_moves(struct game game, size_t pos)
 
     struct move move = {src, dst};
     moves.push_back(move);
+    return moves;
+}
+
+vector<struct move> generate_pawn_moves(struct game game, size_t pos)
+{
+    assert(pos != -1);
+    assert(pos < game.pieces.size());
+
+    vector<struct move> moves = generate_usual_pawn_move(game, pos);
+
     return moves;
 }
 vector<struct move> next_moves(struct game game)
