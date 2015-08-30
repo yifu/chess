@@ -221,33 +221,25 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     assert(sprites[i].piece_pos != -1);
                     assert(sprites[i].piece_pos < game.pieces.size());
 
-                    for(struct piece piece : game.pieces)
-                    {
-                        printf("orig square = ");
-                        print_square(piece.square);
-                    }
-
                     struct piece& piece = game.pieces[sprites[i].piece_pos];
                     struct square src = piece.square;
                     struct square dst = detect_square(e.button.x, e.button.y);
                     struct move candidate_move = {src, dst};
-                    printf("Candidate: ");
-                    print_move(candidate_move);
+                    // printf("Candidate: ");
+                    // print_move(candidate_move);
 
                     bool candidate_is_ok = false;
                     vector<struct move> moves = next_moves(game);
                     for(struct move move : moves)
                     {
-                        print_move(move);
+                        // print_move(move);
                         if(move == candidate_move)
-                        {
                             candidate_is_ok = true;
-                        }
                     }
 
                     if(candidate_is_ok)
                     {
-                        printf("found one move!\n");
+                        // printf("found one move!\n");
                         piece.square = dst;
                         game.moves.push_back(candidate_move);
                         // TODO update game: it's the opponent turn now.
@@ -256,7 +248,7 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     }
                     else
                     {
-                        printf("Nope!\n");
+                        // printf("Nope!\n");
                         // Restore the piece in its orig square.
                         assert(piece.square == src);
                         sprites[i].rect = square2rect(src);
@@ -531,11 +523,6 @@ int main()
 
     struct game game;
     game.pieces = initial_board;
-    for(struct piece piece : game.pieces)
-    {
-        printf("orig square = ");
-        print_square(piece.square);
-    }
 
     vector<struct sprite> sprites = init_sprites(game);
 

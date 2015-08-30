@@ -86,8 +86,8 @@ vector<struct move> next_moves(struct game game)
                 if(dst.row > 7)
                     break;
 
-                printf("src square = "); print_square(src);
-                printf("dst square = "); print_square(dst);
+                // printf("src square = "); print_square(src);
+                // printf("dst square = "); print_square(dst);
 
                 struct move move = {src, dst};
                 next_moves.push_back(move);
