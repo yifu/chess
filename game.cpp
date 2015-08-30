@@ -72,12 +72,79 @@ enum color opponent(enum color c)
 
 bool is_square_clear(struct game game, struct square square)
 {
+    assert(square.row < 8);
+    assert(square.col < 8);
+
     for(struct piece piece : game.pieces)
     {
         if(piece.square == square)
-            return true;
+            return false;
     }
-    return false;
+    return true;
+}
+
+struct piece get_piece(struct game game, struct square square)
+{
+    assert(square.row < 8);
+    assert(square.col < 8);
+
+    for(struct piece piece : game.pieces)
+    {
+        if(piece.square == square)
+            return piece;
+    }
+    assert(false);
+}
+
+vector<struct move> generate_pawn_starting_move(struct game game, size_t pos)
+{
+    assert(pos != -1);
+    assert(pos < game.pieces.size());
+
+    vector<struct move> moves;
+
+    struct piece pawn = game.pieces[pos];
+    struct square src = pawn.square;
+    struct square dst = src;
+
+    if(pawn.color == color::white)
+    {
+        if(pawn.square.row != 1)
+            return moves;
+
+        dst.row++;
+        if(!is_square_clear(game, dst))
+            return moves;
+
+        dst.row++;
+        if(!is_square_clear(game, dst))
+            return moves;
+    }
+    else if(pawn.color == color::black)
+    {
+        if(pawn.square.row != 6)
+            return moves;
+
+        dst.row--;
+        if(!is_square_clear(game, dst))
+            return moves;
+
+        dst.row--;
+        if(!is_square_clear(game, dst))
+            return moves;
+    }
+    else
+    {
+        assert(false);
+    }
+
+    // printf("src square = "); print_square(src);
+    // printf("dst square = "); print_square(dst);
+
+    struct move move = {src, dst};
+    moves.push_back(move);
+
+    return moves;
 }
 
 vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
@@ -101,7 +168,7 @@ vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
     if(dst.row < 0 || dst.row > 7)
         return moves;
 
-    if(is_square_clear(game, dst))
+    if(!is_square_clear(game, dst))
         return moves;
 
     // printf("src square = "); print_square(src);
@@ -119,8 +186,10 @@ vector<struct move> generate_pawn_moves(struct game game, size_t pos)
 
     vector<struct move> moves;
     vector<struct move> usual_moves = generate_usual_pawn_move(game, pos);
+    vector<struct move> starting_moves = generate_pawn_starting_move(game, pos);
 
     moves.insert(moves.begin(), usual_moves.begin(), usual_moves.end());
+    moves.insert(moves.begin(), starting_moves.begin(), starting_moves.end());
 
     return moves;
 }
