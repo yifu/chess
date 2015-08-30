@@ -80,6 +80,34 @@ bool is_square_occupied(struct game game, struct square square)
     return false;
 }
 
+vector<struct move> generate_pawn_moves(struct game game, size_t pos)
+{
+    vector<struct move> moves;
+
+    struct piece pawn = game.pieces[pos];
+    struct square src = pawn.square;
+
+    struct square dst = src;
+    if(pawn.color == color::white)
+        dst.row++;
+    else if(pawn.color == color::black)
+        dst.row--;
+    else
+        assert(false);
+
+    if(dst.row < 0 || dst.row > 7)
+        return moves;
+
+    if(is_square_occupied(game, dst))
+        return moves;
+
+    // printf("src square = "); print_square(src);
+    // printf("dst square = "); print_square(dst);
+
+    struct move move = {src, dst};
+    moves.push_back(move);
+    return moves;
+}
 vector<struct move> next_moves(struct game game)
 {
     vector<struct move> next_moves;
@@ -89,31 +117,12 @@ vector<struct move> next_moves(struct game game)
         if(piece.color != game.cur_player)
             continue;
 
+        vector<struct move> moves;
         switch(piece.type)
         {
         case type::pawn:
         {
-            struct square src = game.pieces[i].square;
-
-            struct square dst = src;
-            if(piece.color == color::white)
-                dst.row++;
-            else if(piece.color == color::black)
-                dst.row--;
-            else
-                assert(false);
-
-            if(dst.row < 0 || dst.row > 7)
-                break;
-
-            if(is_square_occupied(game, dst))
-                break;
-
-            // printf("src square = "); print_square(src);
-            // printf("dst square = "); print_square(dst);
-
-            struct move move = {src, dst};
-            next_moves.push_back(move);
+            moves = generate_pawn_moves(game, i);
             break;
         }
         case type::knight:
@@ -127,6 +136,8 @@ vector<struct move> next_moves(struct game game)
             assert(false);
             break;
         }
+
+        next_moves.insert(next_moves.end(), moves.begin(), moves.end());
     }
     return next_moves;
 }
