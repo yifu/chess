@@ -50,4 +50,5 @@ struct game
 
 void print_square(struct square square);
 void print_move(struct move move);
+enum color opponent(enum color c);
 std::vector<struct move> next_moves(struct game game);

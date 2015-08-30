@@ -63,6 +63,13 @@ vector<struct piece> initial_board = {
     {color::black, type::king, {7, 4}},
 };
 
+enum color opponent(enum color c)
+{
+    if(c == color::white) return color::black;
+    else if(c == color::black) return color::white;
+    else assert(false);
+}
+
 vector<struct move> next_moves(struct game game)
 {
     vector<struct move> next_moves;
