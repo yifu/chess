@@ -106,10 +106,24 @@ enum color opponent(enum color c)
     else assert(false);
 }
 
+bool is_valid_row(int row)
+{
+    return row >= 0 && row <= 7;
+}
+
+bool is_valid_col(int col)
+{
+    return col >= 0 && col <= 7;
+}
+
+bool is_valid_square(struct square square)
+{
+    return is_valid_row(square.row) && is_valid_col(square.col);
+}
+
 bool is_square_clear(struct game game, struct square square)
 {
-    assert(square.row >= 0 && square.row <= 7);
-    assert(square.col >= 0 && square.col <= 7);
+    assert(is_valid_square(square));
 
     for(struct piece piece : game.pieces)
     {
@@ -124,8 +138,7 @@ bool is_square_clear(struct game game, struct square square)
 // Remove get_piece() call by find_piece_pos()
 struct piece get_piece(struct game game, struct square square)
 {
-    assert(square.row >= 0 && square.row <= 7);
-    assert(square.col >= 0 && square.col <= 7);
+    assert(is_valid_square(square));
 
     for(struct piece piece : game.pieces)
     {
@@ -139,8 +152,7 @@ struct piece get_piece(struct game game, struct square square)
 
 size_t find_piece_pos(struct game game, struct square square)
 {
-    assert(square.row >= 0 && square.row <= 7);
-    assert(square.col >= 0 && square.col <= 7);
+    assert(is_valid_square(square));
 
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
@@ -180,10 +192,7 @@ vector<struct move> generate_pawn_capturing_move(struct game game, size_t pos)
         else
             assert(false);
 
-        if(dst.row < 0 || dst.row > 7)
-            continue;
-
-        if(dst.col < 0 || dst.col > 7)
+        if(!is_valid_square(dst))
             continue;
 
         if(is_square_clear(game, dst))
@@ -271,7 +280,7 @@ vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
     else
         assert(false);
 
-    if(dst.row < 0 || dst.row > 7)
+    if(!is_valid_row(dst.row))
         return moves;
 
     if(!is_square_clear(game, dst))
@@ -324,8 +333,7 @@ vector<struct move> generate_rook_moves(struct game game, size_t pos)
         struct square dst = src;
 
         dst += direction;
-        while(dst.row >= 0 && dst.row <= 7 &&
-              dst.col >= 0 && dst.col <= 7)
+        while(is_valid_square(dst))
         {
             if(!is_square_clear(game, dst))
             {
