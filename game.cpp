@@ -77,6 +77,8 @@ bool is_square_clear(struct game game, struct square square)
 
     for(struct piece piece : game.pieces)
     {
+        if(piece.is_captured)
+            continue;
         if(piece.square == square)
             return false;
     }
@@ -91,6 +93,8 @@ struct piece get_piece(struct game game, struct square square)
 
     for(struct piece piece : game.pieces)
     {
+        if(piece.is_captured)
+            continue;
         if(piece.square == square)
             return piece;
     }
@@ -105,6 +109,8 @@ size_t find_piece_pos(struct game game, struct square square)
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
         struct piece piece = game.pieces[i];
+        if(piece.is_captured)
+            continue;
         if(piece.square == square)
             return i;
     }
