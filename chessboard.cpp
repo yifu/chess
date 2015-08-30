@@ -150,7 +150,6 @@ void assertInvariants(vector<struct sprite> sprites, struct game game)
 void process_input_events(vector<struct sprite>& sprites, struct game& game)
 {
     SDL_Event e;
-    assertInvariants(sprites, game);
 
     if(SDL_PollEvent(&e))
     {
@@ -265,7 +264,6 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
         }
         }
     }
-    assertInvariants(sprites, game);
 }
 
 void paint_chess_board()
