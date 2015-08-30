@@ -21,7 +21,7 @@ enum class type
 
 struct square
 {
-    uint8_t row, col;
+    int row, col;
 };
 
 struct move

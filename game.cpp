@@ -72,8 +72,8 @@ enum color opponent(enum color c)
 
 bool is_square_clear(struct game game, struct square square)
 {
-    assert(square.row < 8);
-    assert(square.col < 8);
+    assert(square.row >= 0 && square.row <= 7);
+    assert(square.col >= 0 && square.col <= 7);
 
     for(struct piece piece : game.pieces)
     {
@@ -86,8 +86,8 @@ bool is_square_clear(struct game game, struct square square)
 // Remove get_piece() call by find_piece_pos()
 struct piece get_piece(struct game game, struct square square)
 {
-    assert(square.row < 8);
-    assert(square.col < 8);
+    assert(square.row >= 0 && square.row <= 7);
+    assert(square.col >= 0 && square.col <= 7);
 
     for(struct piece piece : game.pieces)
     {
@@ -99,8 +99,8 @@ struct piece get_piece(struct game game, struct square square)
 
 size_t find_piece_pos(struct game game, struct square square)
 {
-    assert(square.row < 8);
-    assert(square.col < 8);
+    assert(square.row >= 0 && square.row <= 7);
+    assert(square.col >= 0 && square.col <= 7);
 
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
