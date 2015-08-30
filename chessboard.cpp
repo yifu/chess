@@ -133,15 +133,15 @@ void assertInvariants(vector<struct sprite> sprites, struct game game)
     int dragged_sprite_cnt = 0;
     for(auto sprite : sprites)
     {
-	if(sprite.is_dragged)
-	{
-	    dragged_sprite_cnt++;
-	    continue;
-	}
-	assert(sprite.piece_pos != -1);
-	assert(sprite.piece_pos < game.pieces.size());
-	SDL_Rect rect = square2rect(game.pieces[sprite.piece_pos].square);
-	assert(sprite.rect == rect);
+        if(sprite.is_dragged)
+        {
+            dragged_sprite_cnt++;
+            continue;
+        }
+        assert(sprite.piece_pos != -1);
+        assert(sprite.piece_pos < game.pieces.size());
+        SDL_Rect rect = square2rect(game.pieces[sprite.piece_pos].square);
+        assert(sprite.rect == rect);
     }
     assert(dragged_sprite_cnt == 0 || dragged_sprite_cnt == 1);
 }
@@ -171,18 +171,18 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
         case SDL_MOUSEMOTION:
         {
             // print_mouse_motion(e);
-	    bool found = false; // TODO int count?
-	    for(size_t i = 0; i < sprites.size(); i++)
-	    {
-		if(sprites[i].is_dragged)
-		{
-		    assert(!found);
-		    found = true;
-		    // TODO Implement a function: updateDraggedXY() or updateDraggedSpritePos()...
-		    sprites[i].rect.x = e.motion.x - square_width / 2;
-		    sprites[i].rect.y = e.motion.y - square_heigh / 2;
-		}
-	    }
+            bool found = false; // TODO int count?
+            for(size_t i = 0; i < sprites.size(); i++)
+            {
+                if(sprites[i].is_dragged)
+                {
+                    assert(!found);
+                    found = true;
+                    // TODO Implement a function: updateDraggedXY() or updateDraggedSpritePos()...
+                    sprites[i].rect.x = e.motion.x - square_width / 2;
+                    sprites[i].rect.y = e.motion.y - square_heigh / 2;
+                }
+            }
 
 
             break;
@@ -190,40 +190,40 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
         case SDL_MOUSEBUTTONDOWN:
         {
             // print_mouse_button_event(e);
-	    for(size_t i = 0; i < sprites.size(); i++)
-	    {
-		if(is_hitting_rect(sprites[i].rect, e.button.x, e.button.y))
-		{
-		    assert(sprites[i].piece_pos != -1);
-		    assert(sprites[i].piece_pos < game.pieces.size());
-		    if(game.pieces[sprites[i].piece_pos].color != game.cur_player)
-			break;
+            for(size_t i = 0; i < sprites.size(); i++)
+            {
+                if(is_hitting_rect(sprites[i].rect, e.button.x, e.button.y))
+                {
+                    assert(sprites[i].piece_pos != -1);
+                    assert(sprites[i].piece_pos < game.pieces.size());
+                    if(game.pieces[sprites[i].piece_pos].color != game.cur_player)
+                        break;
 
-		    sprites[i].rect.x = e.motion.x - square_width / 2;
-		    sprites[i].rect.y = e.motion.y - square_heigh / 2;
-		    sprites[i].is_dragged = true;
-		}
-	    }
+                    sprites[i].rect.x = e.motion.x - square_width / 2;
+                    sprites[i].rect.y = e.motion.y - square_heigh / 2;
+                    sprites[i].is_dragged = true;
+                }
+            }
             break;
         }
         case SDL_MOUSEBUTTONUP:
         {
-	    // print_mouse_button_event(e);
-	    bool found = false;
-	    for(size_t i = 0; i < sprites.size(); i++)
-	    {
-		if(sprites[i].is_dragged)
-		{
-		    assert(!found);
-		    found = true;
-		    sprites[i].is_dragged = false;
-		    assert(sprites[i].piece_pos != -1);
-		    assert(sprites[i].piece_pos < game.pieces.size());
-		    struct square square = detect_square(e.button.x, e.button.y);
-		    game.pieces[sprites[i].piece_pos].square = square;
-		    sprites[i].rect = square2rect(square);
-		}
-	    }
+            // print_mouse_button_event(e);
+            bool found = false;
+            for(size_t i = 0; i < sprites.size(); i++)
+            {
+                if(sprites[i].is_dragged)
+                {
+                    assert(!found);
+                    found = true;
+                    sprites[i].is_dragged = false;
+                    assert(sprites[i].piece_pos != -1);
+                    assert(sprites[i].piece_pos < game.pieces.size());
+                    struct square square = detect_square(e.button.x, e.button.y);
+                    game.pieces[sprites[i].piece_pos].square = square;
+                    sprites[i].rect = square2rect(square);
+                }
+            }
             break;
         }
         default:
@@ -271,48 +271,48 @@ void paint_sprites(const vector<struct sprite>& sprites)
     // printf("sprites.size()=%lu.\n", sprites.size());
     for(auto sprite : sprites)
     {
-	if(sprite.is_dragged)
-	    continue;
-	SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
+        if(sprite.is_dragged)
+            continue;
+        SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
 
     for(auto sprite : sprites)
     {
-	if(!sprite.is_dragged)
-	    continue;
-	SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
+        if(!sprite.is_dragged)
+            continue;
+        SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
 }
 
 void clean_up()
 {
     if(icon)
-	SDL_FreeSurface(icon);
+        SDL_FreeSurface(icon);
     if(white_pawn_texture)
-	SDL_DestroyTexture(white_pawn_texture);
+        SDL_DestroyTexture(white_pawn_texture);
     if(white_rook_texture)
-	SDL_DestroyTexture(white_rook_texture);
+        SDL_DestroyTexture(white_rook_texture);
     if(white_knight_texture)
-	SDL_DestroyTexture(white_knight_texture);
+        SDL_DestroyTexture(white_knight_texture);
     if(white_bishop_texture)
-	SDL_DestroyTexture(white_bishop_texture);
+        SDL_DestroyTexture(white_bishop_texture);
     if(white_queen_texture)
-	SDL_DestroyTexture(white_queen_texture);
+        SDL_DestroyTexture(white_queen_texture);
     if(white_king_texture)
-	SDL_DestroyTexture(white_king_texture);
+        SDL_DestroyTexture(white_king_texture);
 
     if(black_pawn_texture)
-	SDL_DestroyTexture(black_pawn_texture);
+        SDL_DestroyTexture(black_pawn_texture);
     if(black_rook_texture)
-	SDL_DestroyTexture(black_rook_texture);
+        SDL_DestroyTexture(black_rook_texture);
     if(black_knight_texture)
-	SDL_DestroyTexture(black_knight_texture);
+        SDL_DestroyTexture(black_knight_texture);
     if(black_bishop_texture)
-	SDL_DestroyTexture(black_bishop_texture);
+        SDL_DestroyTexture(black_bishop_texture);
     if(black_queen_texture)
-	SDL_DestroyTexture(black_queen_texture);
+        SDL_DestroyTexture(black_queen_texture);
     if(black_king_texture)
-	SDL_DestroyTexture(black_king_texture);
+        SDL_DestroyTexture(black_king_texture);
 
     if(ren)
         SDL_DestroyRenderer(ren);
@@ -338,13 +338,13 @@ SDL_Texture *init_texture(string filename)
 {
     SDL_Surface *surface = IMG_Load(filename.c_str());
     if(!surface) {
-	cerr << "IMG_Load() error : " << IMG_GetError() << endl;
-	exit_failure();
+        cerr << "IMG_Load() error : " << IMG_GetError() << endl;
+        exit_failure();
     }
     SDL_Texture *texture = SDL_CreateTextureFromSurface(ren, surface);
     if(!texture){
-	cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
-	exit_failure();
+        cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
+        exit_failure();
     }
     SDL_FreeSurface(surface);
     return texture;
@@ -385,27 +385,27 @@ SDL_Texture *deduct_texture(struct piece piece)
 {
     if(piece.color == color::white)
     {
-	switch(piece.type)
-	{
-	case type::pawn: return white_pawn_texture;
-	case type::rook: return white_rook_texture;
-	case type::knight: return white_knight_texture;
-	case type::bishop: return white_bishop_texture;
-	case type::queen: return white_queen_texture;
-	case type::king: return white_king_texture;
-	}
+        switch(piece.type)
+        {
+        case type::pawn: return white_pawn_texture;
+        case type::rook: return white_rook_texture;
+        case type::knight: return white_knight_texture;
+        case type::bishop: return white_bishop_texture;
+        case type::queen: return white_queen_texture;
+        case type::king: return white_king_texture;
+        }
     }
     else
     {
-	switch(piece.type)
-	{
-	case type::pawn: return black_pawn_texture;
-	case type::rook: return black_rook_texture;
-	case type::knight: return black_knight_texture;
-	case type::bishop: return black_bishop_texture;
-	case type::queen: return black_queen_texture;
-	case type::king: return black_king_texture;
-	}
+        switch(piece.type)
+        {
+        case type::pawn: return black_pawn_texture;
+        case type::rook: return black_rook_texture;
+        case type::knight: return black_knight_texture;
+        case type::bishop: return black_bishop_texture;
+        case type::queen: return black_queen_texture;
+        case type::king: return black_king_texture;
+        }
     }
     assert(false);
     return nullptr;
@@ -417,12 +417,12 @@ vector<struct sprite> init_sprites(struct game game)
 
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
-	SDL_Texture *texture = deduct_texture(game.pieces[i]);
-	struct sprite sprite = init_sprite(i, game, texture);
-	sprites.push_back(sprite);
+        SDL_Texture *texture = deduct_texture(game.pieces[i]);
+        struct sprite sprite = init_sprite(i, game, texture);
+        sprites.push_back(sprite);
     }
     // printf("init pieces=%lu, sprites = %lu.\n",
-    // 	   pieces.size(), sprites.size());
+    //     pieces.size(), sprites.size());
 
     return sprites;
 }
@@ -431,8 +431,8 @@ void initWindowIcon()
 {
     icon = IMG_Load("./Chess_ndt60.png");
     if(!icon) {
-	cerr << "IMG_Load() error : " << IMG_GetError() << endl;
-	exit_failure();
+        cerr << "IMG_Load() error : " << IMG_GetError() << endl;
+        exit_failure();
     }
     // icon = SDL_ConvertSurfaceFormat(icon, SDL_PIXELFORMAT_ARGB8888, 0);
     // assert(icon->format->format == SDL_PIXELFORMAT_ARGB8888);
@@ -461,7 +461,7 @@ int main()
 
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
-	exit_failure();
+        exit_failure();
     }
 
     display = SDL_CreateWindow("Chess",
@@ -469,14 +469,14 @@ int main()
                                screenwidth, screenheigh, SDL_WINDOW_HIDDEN);
     if(!display) {
         cerr << "SDL_CreateWindow() error : " << SDL_GetError() << "." << endl;
-	exit_failure();
+        exit_failure();
     }
 
     constexpr Uint32 renderer_flags = SDL_RENDERER_ACCELERATED;
     ren = SDL_CreateRenderer(display, -1/*index*/, renderer_flags);
     if(!ren) {
         cerr << "SDL_CreateRenderer() error :" << SDL_GetError() << "." << endl;
-	exit_failure();
+        exit_failure();
     }
 
     SDL_Rect viewport;
@@ -496,13 +496,13 @@ int main()
 
     while(!quit)
     {
-	assertInvariants(sprites, game);
+        assertInvariants(sprites, game);
         process_input_events(sprites, game);
-	assertInvariants(sprites, game);
+        assertInvariants(sprites, game);
 
-	assertInvariants(sprites, game);
-	paint_screen(sprites);
-	assertInvariants(sprites, game);
+        assertInvariants(sprites, game);
+        paint_screen(sprites);
+        assertInvariants(sprites, game);
     }
     printf("bye!\n");
 
