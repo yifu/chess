@@ -70,6 +70,16 @@ enum color opponent(enum color c)
     else assert(false);
 }
 
+bool is_square_occupied(struct game game, struct square square)
+{
+    for(struct piece piece : game.pieces)
+    {
+        if(piece.square == square)
+            return true;
+    }
+    return false;
+}
+
 vector<struct move> next_moves(struct game game)
 {
     vector<struct move> next_moves;
@@ -83,7 +93,6 @@ vector<struct move> next_moves(struct game game)
         {
         case type::pawn:
         {
-            // TODO Check there's no piece in front of the pawn.
             struct square src = game.pieces[i].square;
 
             struct square dst = src;
@@ -95,6 +104,9 @@ vector<struct move> next_moves(struct game game)
                 assert(false);
 
             if(dst.row < 0 || dst.row > 7)
+                break;
+
+            if(is_square_occupied(game, dst))
                 break;
 
             // printf("src square = "); print_square(src);
