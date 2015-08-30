@@ -273,10 +273,8 @@ vector<struct move> next_moves(struct game game)
         switch(piece.type)
         {
         case type::pawn:
-        {
             moves = generate_pawn_moves(game, i);
             break;
-        }
         case type::knight:
         case type::bishop:
         case type::rook:
