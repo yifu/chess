@@ -440,6 +440,20 @@ void initWindowIcon()
     SDL_SetWindowIcon(display, icon);
 }
 
+void paint_screen(vector<struct sprite> sprites)
+{
+    assert(display);
+
+    SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
+    SDL_RenderClear(ren);
+
+    paint_chess_board();
+    paint_sprites(sprites);
+
+    SDL_RenderPresent(ren);
+    SDL_UpdateWindowSurface(display);
+}
+
 int main()
 {
     constexpr int screenwidth = 640;
@@ -486,17 +500,9 @@ int main()
         process_input_events(sprites, game);
 	assertInvariants(sprites, game);
 
-	SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
-	SDL_RenderClear(ren);
-
 	assertInvariants(sprites, game);
-        paint_chess_board();
-	paint_sprites(sprites);
+	paint_screen(sprites);
 	assertInvariants(sprites, game);
-
-	SDL_RenderPresent(ren);
-	assert(display);
-	SDL_UpdateWindowSurface(display);
     }
     printf("bye!\n");
 
