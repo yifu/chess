@@ -39,7 +39,7 @@ vector<struct piece> initial_board = {
     {color::black, type::bishop, {7, 5}},
     {color::black, type::queen, {7, 3}},
     {color::black, type::king, {7, 4}},
-};
+        };
 
 bool operator == (struct square l, struct square r)
 {
@@ -82,32 +82,28 @@ vector<struct move> next_moves(struct game game)
         switch(piece.type)
         {
         case type::pawn:
+        {
+            // TODO Check there's no piece in front of the pawn.
+            struct square src = game.pieces[i].square;
+
+            struct square dst = src;
             if(piece.color == color::white)
-            {
-                // TODO Check there's no piece in front of the pawn.
-                struct square src = game.pieces[i].square;
-
-                struct square dst = src;
                 dst.row++;
-
-                if(dst.row > 7)
-                    break;
-
-                // printf("src square = "); print_square(src);
-                // printf("dst square = "); print_square(dst);
-
-                struct move move = {src, dst};
-                next_moves.push_back(move);
-            }
             else if(piece.color == color::black)
-            {
-            }
+                dst.row--;
             else
-            {
                 assert(false);
-            }
-            break;
 
+            if(dst.row < 0 || dst.row > 7)
+                break;
+
+            // printf("src square = "); print_square(src);
+            // printf("dst square = "); print_square(dst);
+
+            struct move move = {src, dst};
+            next_moves.push_back(move);
+            break;
+        }
         case type::knight:
         case type::bishop:
         case type::rook:
