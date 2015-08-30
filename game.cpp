@@ -96,6 +96,54 @@ struct piece get_piece(struct game game, struct square square)
     assert(false);
 }
 
+vector<struct move> generate_pawn_capturing_move(struct game game, size_t pos)
+{
+    assert(pos != -1);
+    assert(pos < game.pieces.size());
+
+    vector<struct move> moves;
+
+    for(int shift : {-1, 1})
+    {
+        struct piece pawn = game.pieces[pos];
+        struct square src = pawn.square;
+        struct square dst = src;
+
+        if(pawn.color == color::white)
+        {
+            dst.row++;
+            dst.col += shift;
+        }
+        else if(pawn.color == color::black)
+        {
+            dst.row--;
+            dst.col += shift;
+        }
+        else
+            assert(false);
+
+        if(dst.row < 0 || dst.row > 7)
+            continue;
+
+        if(dst.col < 0 || dst.col > 7)
+            continue;
+
+        if(is_square_clear(game, dst))
+            continue;
+
+        struct piece captured_piece = get_piece(game, dst);
+        if(captured_piece.color == game.cur_player)
+            continue;
+
+        // printf("src square = "); print_square(src);
+        // printf("dst square = "); print_square(dst);
+
+        struct move move = {src, dst};
+        moves.push_back(move);
+    }
+    return moves;
+}
+
 vector<struct move> generate_pawn_starting_move(struct game game, size_t pos)
 {
     assert(pos != -1);
@@ -187,9 +235,11 @@ vector<struct move> generate_pawn_moves(struct game game, size_t pos)
     vector<struct move> moves;
     vector<struct move> usual_moves = generate_usual_pawn_move(game, pos);
     vector<struct move> starting_moves = generate_pawn_starting_move(game, pos);
+    vector<struct move> capturing_moves = generate_pawn_capturing_move(game, pos);
 
     moves.insert(moves.begin(), usual_moves.begin(), usual_moves.end());
     moves.insert(moves.begin(), starting_moves.begin(), starting_moves.end());
+    moves.insert(moves.begin(), capturing_moves.begin(), capturing_moves.end());
 
     return moves;
 }
