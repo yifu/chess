@@ -219,9 +219,9 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     sprites[i].is_dragged = false;
                     assert(sprites[i].piece_pos != -1);
                     assert(sprites[i].piece_pos < game.pieces.size());
-                    struct square square = detect_square(e.button.x, e.button.y);
-                    game.pieces[sprites[i].piece_pos].square = square;
-                    sprites[i].rect = square2rect(square);
+                    struct square dst = detect_square(e.button.x, e.button.y);
+                    game.pieces[sprites[i].piece_pos].square = dst;
+                    sprites[i].rect = square2rect(dst);
                 }
             }
             break;
