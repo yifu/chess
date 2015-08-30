@@ -266,6 +266,48 @@ vector<struct move> generate_pawn_moves(struct game game, size_t pos)
 
     return moves;
 }
+
+struct square& operator += (struct square& l, struct square r)
+{
+    l.row += r.row;
+    l.col += r.col;
+    return l;
+}
+
+vector<struct move> generate_rook_moves(struct game game, size_t pos)
+{
+    assert(pos != -1);
+    assert(pos < game.pieces.size());
+
+    vector<struct move> moves;
+    vector<struct square> directions = {{0,1},{1,0},{0,-1},{-1,0}};
+    for(square direction : directions)
+    {
+        struct piece rook = game.pieces[pos];
+        struct square src = rook.square;
+        struct square dst = src;
+
+        dst += direction;
+        while(dst.row >= 0 && dst.row <= 7 &&
+              dst.col >= 0 && dst.col <= 7)
+        {
+            if(!is_square_clear(game, dst))
+            {
+                size_t pos = find_piece_pos(game, dst);
+                assert(pos < game.pieces.size());
+                if(game.pieces[pos].color == game.cur_player)
+                    break;
+            }
+            moves.push_back({src,dst});
+            if(!is_square_clear(game,dst))
+                break;
+
+            dst += direction;
+        }
+    }
+    return moves;
+}
+
 vector<struct move> next_moves(struct game game)
 {
     vector<struct move> next_moves;
@@ -286,12 +328,12 @@ vector<struct move> next_moves(struct game game)
         case type::bishop:
             break;
         case type::rook:
+            moves = generate_rook_moves(game, i);
             break;
         case type::queen:
             break;
         case type::king:
             break;
-
         default:
             assert(false);
             break;
