@@ -29,6 +29,9 @@ struct move
     struct square src, dst;
 };
 
+bool operator == (struct square l, struct square r);
+bool operator == (struct move l, struct move r);
+
 struct piece
 {
     enum color color;
@@ -47,4 +50,4 @@ struct game
 
 void print_square(struct square square);
 void print_move(struct move move);
-std::vector<struct game> next_games(struct game game);
+std::vector<struct move> next_moves(struct game game);

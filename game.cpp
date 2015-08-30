@@ -1,5 +1,7 @@
+#include <stdio.h>
+#include <assert.h>
+
 #include "game.hpp"
-#include "stdio.h"
 
 using namespace std;
 
@@ -13,6 +15,16 @@ void print_move(struct move move)
     printf("move={src={%d,%d},dst={%d,%d}}\n",
 	   move.src.row, move.src.col,
 	   move.dst.row, move.src.col);
+}
+
+bool operator == (struct square l, struct square r)
+{
+    return l.row == r.row && l.col == r.col;
+}
+
+bool operator == (struct move l, struct move r)
+{
+    return l.src == r.src && l.dst == r.dst;
 }
 
 vector<struct piece> initial_board = {
@@ -51,8 +63,55 @@ vector<struct piece> initial_board = {
     {color::black, type::king, {7, 4}},
 };
 
-vector<struct game> next_games(struct game game)
+vector<struct move> next_moves(struct game game)
 {
-    vector<struct game> result;
-    return result;
+    vector<struct move> next_moves;
+    for(size_t i = 0; i < game.pieces.size(); i++)
+    {
+        struct piece piece = game.pieces[i];
+        if(piece.color != game.cur_player)
+            continue;
+
+        switch(piece.type)
+        {
+        case type::pawn:
+            if(piece.color == color::white)
+            {
+                // TODO Check there's no piece in front of the pawn.
+                struct square src = game.pieces[i].square;
+
+                struct square dst = src;
+                dst.row++;
+
+                if(dst.row > 7)
+                    break;
+
+                printf("src square = "); print_square(src);
+                printf("dst square = "); print_square(dst);
+
+                struct move move = {src, dst};
+                next_moves.push_back(move);
+            }
+            else if(piece.color == color::black)
+            {
+            }
+            else
+            {
+                assert(false);
+            }
+            break;
+
+        case type::knight:
+        case type::bishop:
+        case type::rook:
+        case type::queen:
+        case type::king:
+            break;
+
+        default:
+            assert(false);
+            break;
+        }
+    }
+    return next_moves;
 }
