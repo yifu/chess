@@ -36,6 +36,13 @@ SDL_Texture *black_king_texture = nullptr;
 
 int square_width, square_heigh;
 
+SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square_heigh };
+
+bool operator != (SDL_Rect l, SDL_Rect r)
+{
+    return l.x != r.x || l.y != r.y || l.w != r.w || l.h != r.h;
+}
+
 struct square detect_square(Sint32 x, Sint32 y)
 {
     // TODO If player is black, then the coordinates are inversed.
@@ -133,16 +140,28 @@ void assertInvariants(vector<struct sprite> sprites, struct game game)
     int dragged_sprite_cnt = 0;
     for(auto sprite : sprites)
     {
-        if(sprite.is_dragged)
-        {
-            dragged_sprite_cnt++;
-            continue;
-        }
         assert(sprite.piece_pos != -1);
         assert(sprite.piece_pos < game.pieces.size());
         struct piece piece = game.pieces[sprite.piece_pos];
-        SDL_Rect rect = square2rect(piece.square);
-        assert(sprite.rect == rect);
+
+        if(sprite.is_dragged)
+        {
+            assert(!piece.is_captured);
+            assert(sprite.rect != out_of_view_rect);
+            dragged_sprite_cnt++;
+            continue;
+        }
+
+        if(piece.is_captured)
+        {
+            assert(sprite.rect == out_of_view_rect);
+        }
+        else
+        {
+            assert(sprite.rect != out_of_view_rect);
+            SDL_Rect rect = square2rect(piece.square);
+            assert(sprite.rect == rect);
+        }
     }
     assert(dragged_sprite_cnt == 0 || dragged_sprite_cnt == 1);
 }
@@ -239,11 +258,31 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     if(candidate_is_ok)
                     {
                         // printf("found one move!\n");
-                        piece.square = dst;
-                        game.moves.push_back(candidate_move);
-                        game.cur_player = opponent(game.cur_player);
+                        if(!is_square_clear(game, dst))
+                        {
+                            size_t pos = find_piece_pos(game, dst);
+                            assert(pos != -1);
+
+                            size_t sprite_pos = -1;
+                            for(size_t i = 0; i < sprites.size(); i++)
+                            {
+                                if(sprites[i].piece_pos == pos)
+                                    sprite_pos = i;
+                            }
+                            assert(sprite_pos != -1);
+                            assert(!game.pieces[pos].is_captured);
+
+                            game.pieces[pos].is_captured = true;
+                            sprites[sprite_pos].rect = out_of_view_rect;
+                        }
+
                         sprites[i].rect = square2rect(dst);
                         sprites[i].is_dragged = false;
+
+                        piece.square = dst;
+
+                        game.moves.push_back(candidate_move);
+                        game.cur_player = opponent(game.cur_player);
                     }
                     else
                     {
@@ -303,6 +342,7 @@ void paint_sprites(const vector<struct sprite>& sprites)
     {
         if(sprite.is_dragged)
             continue;
+
         SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
 
@@ -310,6 +350,7 @@ void paint_sprites(const vector<struct sprite>& sprites)
     {
         if(!sprite.is_dragged)
             continue;
+
         SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
 }

@@ -6,40 +6,40 @@
 using namespace std;
 
 vector<struct piece> initial_board = {
-    {color::white, type::pawn, {1, 0}},
-    {color::white, type::pawn, {1, 1}},
-    {color::white, type::pawn, {1, 2}},
-    {color::white, type::pawn, {1, 3}},
-    {color::white, type::pawn, {1, 4}},
-    {color::white, type::pawn, {1, 5}},
-    {color::white, type::pawn, {1, 6}},
-    {color::white, type::pawn, {1, 7}},
-    {color::white, type::rook, {0, 0}},
-    {color::white, type::rook, {0, 7}},
-    {color::white, type::knight, {0, 1}},
-    {color::white, type::knight, {0, 6}},
-    {color::white, type::bishop, {0, 2}},
-    {color::white, type::bishop, {0, 5}},
-    {color::white, type::queen, {0, 3}},
-    {color::white, type::king, {0, 4}},
+    {color::white, type::pawn, {1, 0}, false},
+    {color::white, type::pawn, {1, 1}, false},
+    {color::white, type::pawn, {1, 2}, false},
+    {color::white, type::pawn, {1, 3}, false},
+    {color::white, type::pawn, {1, 4}, false},
+    {color::white, type::pawn, {1, 5}, false},
+    {color::white, type::pawn, {1, 6}, false},
+    {color::white, type::pawn, {1, 7}, false},
+    {color::white, type::rook, {0, 0}, false},
+    {color::white, type::rook, {0, 7}, false},
+    {color::white, type::knight, {0, 1}, false},
+    {color::white, type::knight, {0, 6}, false},
+    {color::white, type::bishop, {0, 2}, false},
+    {color::white, type::bishop, {0, 5}, false},
+    {color::white, type::queen, {0, 3}, false},
+    {color::white, type::king, {0, 4}, false},
 
-    {color::black, type::pawn, {6, 0}},
-    {color::black, type::pawn, {6, 1}},
-    {color::black, type::pawn, {6, 2}},
-    {color::black, type::pawn, {6, 3}},
-    {color::black, type::pawn, {6, 4}},
-    {color::black, type::pawn, {6, 5}},
-    {color::black, type::pawn, {6, 6}},
-    {color::black, type::pawn, {6, 7}},
-    {color::black, type::rook, {7, 0}},
-    {color::black, type::rook, {7, 7}},
-    {color::black, type::knight, {7, 1}},
-    {color::black, type::knight, {7, 6}},
-    {color::black, type::bishop, {7, 2}},
-    {color::black, type::bishop, {7, 5}},
-    {color::black, type::queen, {7, 3}},
-    {color::black, type::king, {7, 4}},
-        };
+    {color::black, type::pawn, {6, 0}, false},
+    {color::black, type::pawn, {6, 1}, false},
+    {color::black, type::pawn, {6, 2}, false},
+    {color::black, type::pawn, {6, 3}, false},
+    {color::black, type::pawn, {6, 4}, false},
+    {color::black, type::pawn, {6, 5}, false},
+    {color::black, type::pawn, {6, 6}, false},
+    {color::black, type::pawn, {6, 7}, false},
+    {color::black, type::rook, {7, 0}, false},
+    {color::black, type::rook, {7, 7}, false},
+    {color::black, type::knight, {7, 1}, false},
+    {color::black, type::knight, {7, 6}, false},
+    {color::black, type::bishop, {7, 2}, false},
+    {color::black, type::bishop, {7, 5}, false},
+    {color::black, type::queen, {7, 3}, false},
+    {color::black, type::king, {7, 4}, false},
+};
 
 bool operator == (struct square l, struct square r)
 {
@@ -83,6 +83,7 @@ bool is_square_clear(struct game game, struct square square)
     return true;
 }
 
+// Remove get_piece() call by find_piece_pos()
 struct piece get_piece(struct game game, struct square square)
 {
     assert(square.row < 8);
@@ -94,6 +95,21 @@ struct piece get_piece(struct game game, struct square square)
             return piece;
     }
     assert(false);
+}
+
+size_t find_piece_pos(struct game game, struct square square)
+{
+    assert(square.row < 8);
+    assert(square.col < 8);
+
+    for(size_t i = 0; i < game.pieces.size(); i++)
+    {
+        struct piece piece = game.pieces[i];
+        if(piece.square == square)
+            return i;
+    }
+    assert(false);
+    return -1;
 }
 
 vector<struct move> generate_pawn_capturing_move(struct game game, size_t pos)
