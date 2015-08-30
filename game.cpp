@@ -5,28 +5,6 @@
 
 using namespace std;
 
-void print_square(struct square square)
-{
-    printf("square={row=%d,col=%d}\n", square.row, square.col);
-}
-
-void print_move(struct move move)
-{
-    printf("move={src={%d,%d},dst={%d,%d}}\n",
-	   move.src.row, move.src.col,
-	   move.dst.row, move.src.col);
-}
-
-bool operator == (struct square l, struct square r)
-{
-    return l.row == r.row && l.col == r.col;
-}
-
-bool operator == (struct move l, struct move r)
-{
-    return l.src == r.src && l.dst == r.dst;
-}
-
 vector<struct piece> initial_board = {
     {color::white, type::pawn, {1, 0}},
     {color::white, type::pawn, {1, 1}},
@@ -62,6 +40,28 @@ vector<struct piece> initial_board = {
     {color::black, type::queen, {7, 3}},
     {color::black, type::king, {7, 4}},
 };
+
+bool operator == (struct square l, struct square r)
+{
+    return l.row == r.row && l.col == r.col;
+}
+
+bool operator == (struct move l, struct move r)
+{
+    return l.src == r.src && l.dst == r.dst;
+}
+
+void print_square(struct square square)
+{
+    printf("square={row=%d,col=%d}\n", square.row, square.col);
+}
+
+void print_move(struct move move)
+{
+    printf("move={src={%d,%d},dst={%d,%d}}\n",
+	   move.src.row, move.src.col,
+	   move.dst.row, move.src.col);
+}
 
 enum color opponent(enum color c)
 {
