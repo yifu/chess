@@ -236,6 +236,7 @@ vector<struct move> generate_pawn_moves(struct game game, size_t pos)
     vector<struct move> usual_moves = generate_usual_pawn_move(game, pos);
     vector<struct move> starting_moves = generate_pawn_starting_move(game, pos);
     vector<struct move> capturing_moves = generate_pawn_capturing_move(game, pos);
+    // TODO Implement promoting pawn move.
 
     moves.insert(moves.begin(), usual_moves.begin(), usual_moves.end());
     moves.insert(moves.begin(), starting_moves.begin(), starting_moves.end());
