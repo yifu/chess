@@ -51,6 +51,7 @@ bool operator == (struct move l, struct move r);
 
 void print_square(struct square square);
 void print_move(struct move move);
+void print_piece(struct piece piece);
 enum color opponent(enum color c);
 bool is_square_clear(struct game game, struct square square);
 std::vector<struct move> next_moves(struct game game);

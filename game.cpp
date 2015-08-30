@@ -63,6 +63,42 @@ void print_move(struct move move)
 	   move.dst.row, move.src.col);
 }
 
+const char *color2string(enum color c)
+{
+    switch(c)
+    {
+    case color::white: return "white";
+    case color::black: return "black";
+    default: assert(false); return "unknown";
+    }
+    return "-unknown-";
+}
+
+const char *type2string(enum type t)
+{
+    switch(t)
+    {
+    case type::pawn: return "pawn";
+    case type::rook: return "rook";
+    case type::knight: return "knight";
+    case type::bishop: return "bishop";
+    case type::queen: return "queen";
+    case type::king: return "king";
+    default: assert(false); return "unknown";
+    }
+    return "-unknown-";
+}
+
+void print_piece(struct piece piece)
+{
+    printf("piece={color=%s, type=%s, square={%d,%d}, is_captured=%d}\n",
+           color2string(piece.color),
+           type2string(piece.type),
+           piece.square.row,
+           piece.square.col,
+           piece.is_captured);
+}
+
 enum color opponent(enum color c)
 {
     if(c == color::white) return color::black;
