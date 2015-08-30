@@ -68,7 +68,7 @@ struct sprite
     SDL_Texture *tex = nullptr;
     SDL_Rect rect = {0,0,0,0};
     bool is_dragged = false;
-    struct square orig_square = {0,0};
+    size_t piece_pos = -1;
 };
 
 void print_timespec(struct timespec t)
@@ -128,7 +128,7 @@ uint64_t substract_time(struct timespec l, struct timespec r)
     return result;
 }
 
-void assertInvariants(vector<struct sprite> sprites)
+void assertInvariants(vector<struct sprite> sprites, struct game game)
 {
     int dragged_sprite_cnt = 0;
     for(auto sprite : sprites)
@@ -138,15 +138,18 @@ void assertInvariants(vector<struct sprite> sprites)
 	    dragged_sprite_cnt++;
 	    continue;
 	}
-	assert(sprite.rect == square2rect(sprite.orig_square));
+	assert(sprite.piece_pos != -1);
+	assert(sprite.piece_pos < game.pieces.size());
+	SDL_Rect rect = square2rect(game.pieces[sprite.piece_pos].square);
+	assert(sprite.rect == rect);
     }
     assert(dragged_sprite_cnt == 0 || dragged_sprite_cnt == 1);
 }
 
-void process_input_events(vector<struct sprite>& sprites)
+void process_input_events(vector<struct sprite>& sprites, struct game& game)
 {
     SDL_Event e;
-    assertInvariants(sprites);
+    assertInvariants(sprites, game);
 
     if(SDL_PollEvent(&e))
     {
@@ -191,6 +194,11 @@ void process_input_events(vector<struct sprite>& sprites)
 	    {
 		if(is_hitting_rect(sprites[i].rect, e.button.x, e.button.y))
 		{
+		    assert(sprites[i].piece_pos != -1);
+		    assert(sprites[i].piece_pos < game.pieces.size());
+		    if(game.pieces[sprites[i].piece_pos].color != game.cur_player)
+			break;
+
 		    sprites[i].rect.x = e.motion.x - square_width / 2;
 		    sprites[i].rect.y = e.motion.y - square_heigh / 2;
 		    sprites[i].is_dragged = true;
@@ -209,8 +217,11 @@ void process_input_events(vector<struct sprite>& sprites)
 		    assert(!found);
 		    found = true;
 		    sprites[i].is_dragged = false;
-		    sprites[i].orig_square = detect_square(e.button.x, e.button.y);
-		    sprites[i].rect = square2rect(sprites[i].orig_square);
+		    assert(sprites[i].piece_pos != -1);
+		    assert(sprites[i].piece_pos < game.pieces.size());
+		    struct square square = detect_square(e.button.x, e.button.y);
+		    game.pieces[sprites[i].piece_pos].square = square;
+		    sprites[i].rect = square2rect(square);
 		}
 	    }
             break;
@@ -222,7 +233,7 @@ void process_input_events(vector<struct sprite>& sprites)
         }
         }
     }
-    assertInvariants(sprites);
+    assertInvariants(sprites, game);
 }
 
 void paint_chess_board()
@@ -257,7 +268,6 @@ void paint_chess_board()
 
 void paint_sprites(const vector<struct sprite>& sprites)
 {
-    assertInvariants(sprites);
     // printf("sprites.size()=%lu.\n", sprites.size());
     for(auto sprite : sprites)
     {
@@ -272,8 +282,6 @@ void paint_sprites(const vector<struct sprite>& sprites)
 	    continue;
 	SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
-
-    assertInvariants(sprites);
 }
 
 void clean_up()
@@ -360,13 +368,15 @@ void init_textures()
     black_king_texture = init_texture("./Chess_kdt60.png");
 }
 
-struct sprite init_sprite(struct square square, SDL_Texture *texture)
+struct sprite init_sprite(size_t piece_pos, struct game game, SDL_Texture *texture)
 {
+    assert(piece_pos != -1);
+    assert(piece_pos < game.pieces.size());
     assert(texture);
     struct sprite sprite;
     sprite.tex = texture;
-    sprite.orig_square = square;
-    sprite.rect = square2rect(sprite.orig_square);
+    sprite.rect = square2rect(game.pieces[piece_pos].square);
+    sprite.piece_pos = piece_pos;
     print_rect(sprite.rect);
     return sprite;
 }
@@ -401,13 +411,15 @@ SDL_Texture *deduct_texture(struct piece piece)
     return nullptr;
 }
 
-vector<struct sprite> init_sprites(vector<struct piece> pieces)
+vector<struct sprite> init_sprites(struct game game)
 {
     vector<struct sprite> sprites;
 
-    for(struct piece piece : pieces)
+    for(size_t i = 0; i < game.pieces.size(); i++)
     {
-	sprites.push_back(init_sprite(piece.square, deduct_texture(piece)));
+	SDL_Texture *texture = deduct_texture(game.pieces[i]);
+	struct sprite sprite = init_sprite(i, game, texture);
+	sprites.push_back(sprite);
     }
     // printf("init pieces=%lu, sprites = %lu.\n",
     // 	   pieces.size(), sprites.size());
@@ -466,17 +478,21 @@ int main()
     struct game game;
     game.pieces = initial_board;
 
-    vector<struct sprite> sprites = init_sprites(game.pieces);
+    vector<struct sprite> sprites = init_sprites(game);
 
     while(!quit)
     {
-        process_input_events(sprites);
+	assertInvariants(sprites, game);
+        process_input_events(sprites, game);
+	assertInvariants(sprites, game);
 
 	SDL_SetRenderDrawColor(ren, 0, 0, 0, SDL_ALPHA_OPAQUE);
 	SDL_RenderClear(ren);
 
+	assertInvariants(sprites, game);
         paint_chess_board();
 	paint_sprites(sprites);
+	assertInvariants(sprites, game);
 
 	SDL_RenderPresent(ren);
 	assert(display);
