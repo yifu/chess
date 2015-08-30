@@ -242,7 +242,7 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                         // printf("found one move!\n");
                         piece.square = dst;
                         game.moves.push_back(candidate_move);
-                        // TODO update game: it's the opponent turn now.
+                        game.cur_player = opponent(game.cur_player);
                         sprites[i].rect = square2rect(dst);
                         sprites[i].is_dragged = false;
                     }
