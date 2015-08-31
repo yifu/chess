@@ -574,6 +574,9 @@ int main()
         assertInvariants(sprites, game);
         paint_screen(sprites);
         assertInvariants(sprites, game);
+
+        // TODO Implement an adaptative delay.
+        SDL_Delay(7);
     }
     printf("bye!\n");
 
