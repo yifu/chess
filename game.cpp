@@ -315,12 +315,12 @@ struct square& operator += (struct square& l, struct square r)
     return l;
 }
 
-vector<struct move> generate_rook_moves(struct game game, size_t pos)
+vector<struct move> generate_sliding_moves(struct game game, size_t pos,
+                                           vector<struct square> directions)
 {
     assert(pos < game.pieces.size());
 
     vector<struct move> moves;
-    vector<struct square> directions = {{0,1},{1,0},{0,-1},{-1,0}};
     for(square direction : directions)
     {
         struct piece rook = game.pieces[pos];
@@ -345,6 +345,11 @@ vector<struct move> generate_rook_moves(struct game game, size_t pos)
         }
     }
     return moves;
+}
+
+vector<struct move> generate_rook_moves(struct game game, size_t pos)
+{
+    return generate_sliding_moves(game, pos, {{0,1},{1,0},{0,-1},{-1,0}});
 }
 
 vector<struct move> next_moves(struct game game)
