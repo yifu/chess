@@ -415,8 +415,12 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     if(candidate_is_ok)
                     {
                         // printf("found one move!\n");
+                        // TODO We may overwrite with the candidate_game above.
                         game = apply_move(game, candidate_move);
                     }
+                    // TODO Better to call that from the top of the
+                    // event loop. In the paint_sprites() call. We may
+                    // need to define a separated 'dragged piece'.
                     sprites = init_sprites(game);
                     // print_game(game);
                 }
