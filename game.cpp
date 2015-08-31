@@ -367,6 +367,42 @@ vector<struct move> generate_queen_moves(struct game game, size_t pos)
     return generate_sliding_moves(game, pos, directions);
 }
 
+vector<struct move> generate_king_moves(struct game game, size_t pos)
+{
+    vector<struct move> moves;
+    vector<struct square> directions = {
+        {0,1},{1,0},{0,-1},{-1,0},{1,1},{-1,1},{-1,-1},{1,-1}
+    };
+
+    for(struct square direction : directions)
+    {
+        struct piece king = game.pieces[pos];
+        struct square src = king.square;
+        struct square dst = src;
+
+        dst += direction;
+        if(is_valid_square(dst))
+        {
+            if(is_square_clear(game, dst))
+            {
+                moves.push_back({src,dst});
+            }
+            else
+            {
+                assert(!is_square_clear(game, dst));
+                size_t pos = find_piece_pos(game, dst);
+                assert(pos < game.pieces.size());
+                if(game.pieces[pos].color != game.cur_player)
+                    moves.push_back({src,dst});
+            }
+        }
+    }
+
+    // TODO Implement Castling.
+
+    return moves;
+}
+
 vector<struct move> generate_knight_moves(struct game game, size_t pos)
 {
     vector<struct move> moves;
@@ -428,6 +464,7 @@ vector<struct move> next_moves(struct game game)
             moves = generate_queen_moves(game, i);
             break;
         case type::king:
+            moves = generate_king_moves(game, i);
             break;
         default:
             assert(false);
