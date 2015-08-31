@@ -1,7 +1,7 @@
 
 # n.o is made automatically from n.cc, n.cpp, or n.C with a recipe of
 # the form ‘$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c’
-CXXFLAGS=-ggdb -std=c++11 $(shell sdl2-config --cflags)
+CXXFLAGS=-Werror -Wall -Wextra -ggdb -std=c++11 $(shell sdl2-config --cflags)
 
 
 

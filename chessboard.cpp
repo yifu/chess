@@ -140,7 +140,6 @@ void assertInvariants(vector<struct sprite> sprites, struct game game)
     int dragged_sprite_cnt = 0;
     for(auto sprite : sprites)
     {
-        assert(sprite.piece_pos != -1);
         assert(sprite.piece_pos < game.pieces.size());
         struct piece piece = game.pieces[sprite.piece_pos];
 
@@ -213,7 +212,6 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
             {
                 if(is_hitting_rect(sprites[i].rect, e.button.x, e.button.y))
                 {
-                    assert(sprites[i].piece_pos != -1);
                     assert(sprites[i].piece_pos < game.pieces.size());
                     if(game.pieces[sprites[i].piece_pos].color != game.cur_player)
                         break;
@@ -236,7 +234,6 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     assert(!found);
                     found = true;
 
-                    assert(sprites[i].piece_pos != -1);
                     assert(sprites[i].piece_pos < game.pieces.size());
 
                     struct piece& piece = game.pieces[sprites[i].piece_pos];
@@ -261,7 +258,7 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                         if(!is_square_clear(game, dst))
                         {
                             size_t pos = find_piece_pos(game, dst);
-                            assert(pos != -1);
+                            assert(pos < game.pieces.size());
 
                             size_t sprite_pos = -1;
                             for(size_t i = 0; i < sprites.size(); i++)
@@ -269,7 +266,7 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                                 if(sprites[i].piece_pos == pos)
                                     sprite_pos = i;
                             }
-                            assert(sprite_pos != -1);
+                            assert(sprite_pos < sprites.size());
                             assert(!game.pieces[pos].is_captured);
 
                             game.pieces[pos].is_captured = true;
@@ -423,7 +420,6 @@ SDL_Texture *init_texture(string filename)
 
 void init_textures()
 {
-    SDL_Surface *surface = nullptr;
     white_pawn_texture = init_texture("./Chess_plt60.png");
     white_rook_texture = init_texture("./Chess_rlt60.png");
     white_knight_texture = init_texture("./Chess_nlt60.png");
@@ -441,7 +437,6 @@ void init_textures()
 
 struct sprite init_sprite(size_t piece_pos, struct game game, SDL_Texture *texture)
 {
-    assert(piece_pos != -1);
     assert(piece_pos < game.pieces.size());
     assert(texture);
     struct sprite sprite;
