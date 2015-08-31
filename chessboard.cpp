@@ -165,6 +165,150 @@ void assertInvariants(vector<struct sprite> sprites, struct game game)
     assert(dragged_sprite_cnt == 0 || dragged_sprite_cnt == 1);
 }
 
+void clean_up()
+{
+    if(icon)
+        SDL_FreeSurface(icon);
+    if(white_pawn_texture)
+        SDL_DestroyTexture(white_pawn_texture);
+    if(white_rook_texture)
+        SDL_DestroyTexture(white_rook_texture);
+    if(white_knight_texture)
+        SDL_DestroyTexture(white_knight_texture);
+    if(white_bishop_texture)
+        SDL_DestroyTexture(white_bishop_texture);
+    if(white_queen_texture)
+        SDL_DestroyTexture(white_queen_texture);
+    if(white_king_texture)
+        SDL_DestroyTexture(white_king_texture);
+
+    if(black_pawn_texture)
+        SDL_DestroyTexture(black_pawn_texture);
+    if(black_rook_texture)
+        SDL_DestroyTexture(black_rook_texture);
+    if(black_knight_texture)
+        SDL_DestroyTexture(black_knight_texture);
+    if(black_bishop_texture)
+        SDL_DestroyTexture(black_bishop_texture);
+    if(black_queen_texture)
+        SDL_DestroyTexture(black_queen_texture);
+    if(black_king_texture)
+        SDL_DestroyTexture(black_king_texture);
+
+    if(ren)
+        SDL_DestroyRenderer(ren);
+
+    if(display)
+        SDL_DestroyWindow(display);
+    SDL_Quit();
+}
+
+void exit_success()
+{
+    clean_up();
+    exit(EXIT_SUCCESS);
+}
+
+void exit_failure()
+{
+    clean_up();
+    exit(EXIT_FAILURE);
+}
+
+SDL_Texture *init_texture(string filename)
+{
+    SDL_Surface *surface = IMG_Load(filename.c_str());
+    if(!surface) {
+        cerr << "IMG_Load() error : " << IMG_GetError() << endl;
+        exit_failure();
+    }
+    SDL_Texture *texture = SDL_CreateTextureFromSurface(ren, surface);
+    if(!texture){
+        cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
+        exit_failure();
+    }
+    SDL_FreeSurface(surface);
+    return texture;
+}
+
+void init_textures()
+{
+    white_pawn_texture = init_texture("./Chess_plt60.png");
+    white_rook_texture = init_texture("./Chess_rlt60.png");
+    white_knight_texture = init_texture("./Chess_nlt60.png");
+    white_bishop_texture = init_texture("./Chess_blt60.png");
+    white_queen_texture =  init_texture("./Chess_qlt60.png");
+    white_king_texture = init_texture("./Chess_klt60.png");
+
+    black_pawn_texture = init_texture("./Chess_pdt60.png");
+    black_rook_texture = init_texture("./Chess_rdt60.png");
+    black_knight_texture = init_texture("./Chess_ndt60.png");
+    black_bishop_texture = init_texture("./Chess_bdt60.png");
+    black_queen_texture =  init_texture("./Chess_qdt60.png");
+    black_king_texture = init_texture("./Chess_kdt60.png");
+}
+
+SDL_Texture *deduct_texture(struct piece piece)
+{
+    if(piece.color == color::white)
+    {
+        switch(piece.type)
+        {
+        case type::pawn: return white_pawn_texture;
+        case type::rook: return white_rook_texture;
+        case type::knight: return white_knight_texture;
+        case type::bishop: return white_bishop_texture;
+        case type::queen: return white_queen_texture;
+        case type::king: return white_king_texture;
+        }
+    }
+    else
+    {
+        switch(piece.type)
+        {
+        case type::pawn: return black_pawn_texture;
+        case type::rook: return black_rook_texture;
+        case type::knight: return black_knight_texture;
+        case type::bishop: return black_bishop_texture;
+        case type::queen: return black_queen_texture;
+        case type::king: return black_king_texture;
+        }
+    }
+    assert(false);
+    return nullptr;
+}
+
+struct sprite init_sprite(size_t piece_pos, struct game game, SDL_Texture *texture)
+{
+    assert(piece_pos < game.pieces.size());
+    assert(texture);
+
+    struct piece piece = game.pieces[piece_pos];
+    struct sprite sprite;
+    sprite.tex = texture;
+    sprite.rect = piece.is_captured ? out_of_view_rect : square2rect(piece.square);
+    sprite.piece_pos = piece_pos;
+    print_rect(sprite.rect);
+    return sprite;
+}
+
+vector<struct sprite> init_sprites(struct game game)
+{
+    vector<struct sprite> sprites;
+
+    for(size_t i = 0; i < game.pieces.size(); i++)
+    {
+        SDL_Texture *texture = deduct_texture(game.pieces[i]);
+        // TODO Refactor init_sprite(). It should take only a struct piece as a parameter.
+        struct sprite sprite = init_sprite(i, game, texture);
+        sprites.push_back(sprite);
+    }
+    // printf("init pieces=%lu, sprites = %lu.\n",
+    //     pieces.size(), sprites.size());
+
+    return sprites;
+}
+
 void process_input_events(vector<struct sprite>& sprites, struct game& game)
 {
     SDL_Event e;
@@ -350,147 +494,6 @@ void paint_sprites(const vector<struct sprite>& sprites)
 
         SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
     }
-}
-
-void clean_up()
-{
-    if(icon)
-        SDL_FreeSurface(icon);
-    if(white_pawn_texture)
-        SDL_DestroyTexture(white_pawn_texture);
-    if(white_rook_texture)
-        SDL_DestroyTexture(white_rook_texture);
-    if(white_knight_texture)
-        SDL_DestroyTexture(white_knight_texture);
-    if(white_bishop_texture)
-        SDL_DestroyTexture(white_bishop_texture);
-    if(white_queen_texture)
-        SDL_DestroyTexture(white_queen_texture);
-    if(white_king_texture)
-        SDL_DestroyTexture(white_king_texture);
-
-    if(black_pawn_texture)
-        SDL_DestroyTexture(black_pawn_texture);
-    if(black_rook_texture)
-        SDL_DestroyTexture(black_rook_texture);
-    if(black_knight_texture)
-        SDL_DestroyTexture(black_knight_texture);
-    if(black_bishop_texture)
-        SDL_DestroyTexture(black_bishop_texture);
-    if(black_queen_texture)
-        SDL_DestroyTexture(black_queen_texture);
-    if(black_king_texture)
-        SDL_DestroyTexture(black_king_texture);
-
-    if(ren)
-        SDL_DestroyRenderer(ren);
-
-    if(display)
-        SDL_DestroyWindow(display);
-    SDL_Quit();
-}
-
-void exit_success()
-{
-    clean_up();
-    exit(EXIT_SUCCESS);
-}
-
-void exit_failure()
-{
-    clean_up();
-    exit(EXIT_FAILURE);
-}
-
-SDL_Texture *init_texture(string filename)
-{
-    SDL_Surface *surface = IMG_Load(filename.c_str());
-    if(!surface) {
-        cerr << "IMG_Load() error : " << IMG_GetError() << endl;
-        exit_failure();
-    }
-    SDL_Texture *texture = SDL_CreateTextureFromSurface(ren, surface);
-    if(!texture){
-        cerr << "SDL_CreateTextureFromSurface() error : " << SDL_GetError() << "." << endl;
-        exit_failure();
-    }
-    SDL_FreeSurface(surface);
-    return texture;
-}
-
-void init_textures()
-{
-    white_pawn_texture = init_texture("./Chess_plt60.png");
-    white_rook_texture = init_texture("./Chess_rlt60.png");
-    white_knight_texture = init_texture("./Chess_nlt60.png");
-    white_bishop_texture = init_texture("./Chess_blt60.png");
-    white_queen_texture =  init_texture("./Chess_qlt60.png");
-    white_king_texture = init_texture("./Chess_klt60.png");
-
-    black_pawn_texture = init_texture("./Chess_pdt60.png");
-    black_rook_texture = init_texture("./Chess_rdt60.png");
-    black_knight_texture = init_texture("./Chess_ndt60.png");
-    black_bishop_texture = init_texture("./Chess_bdt60.png");
-    black_queen_texture =  init_texture("./Chess_qdt60.png");
-    black_king_texture = init_texture("./Chess_kdt60.png");
-}
-
-struct sprite init_sprite(size_t piece_pos, struct game game, SDL_Texture *texture)
-{
-    assert(piece_pos < game.pieces.size());
-    assert(texture);
-    struct sprite sprite;
-    sprite.tex = texture;
-    sprite.rect = square2rect(game.pieces[piece_pos].square);
-    sprite.piece_pos = piece_pos;
-    print_rect(sprite.rect);
-    return sprite;
-}
-
-SDL_Texture *deduct_texture(struct piece piece)
-{
-    if(piece.color == color::white)
-    {
-        switch(piece.type)
-        {
-        case type::pawn: return white_pawn_texture;
-        case type::rook: return white_rook_texture;
-        case type::knight: return white_knight_texture;
-        case type::bishop: return white_bishop_texture;
-        case type::queen: return white_queen_texture;
-        case type::king: return white_king_texture;
-        }
-    }
-    else
-    {
-        switch(piece.type)
-        {
-        case type::pawn: return black_pawn_texture;
-        case type::rook: return black_rook_texture;
-        case type::knight: return black_knight_texture;
-        case type::bishop: return black_bishop_texture;
-        case type::queen: return black_queen_texture;
-        case type::king: return black_king_texture;
-        }
-    }
-    assert(false);
-    return nullptr;
-}
-
-vector<struct sprite> init_sprites(struct game game)
-{
-    vector<struct sprite> sprites;
-
-    for(size_t i = 0; i < game.pieces.size(); i++)
-    {
-        SDL_Texture *texture = deduct_texture(game.pieces[i]);
-        struct sprite sprite = init_sprite(i, game, texture);
-        sprites.push_back(sprite);
-    }
-    // printf("init pieces=%lu, sprites = %lu.\n",
-    //     pieces.size(), sprites.size());
-
-    return sprites;
 }
 
 void initWindowIcon()
