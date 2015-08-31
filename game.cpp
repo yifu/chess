@@ -357,6 +357,14 @@ vector<struct move> generate_bishop_moves(struct game game, size_t pos)
     return generate_sliding_moves(game, pos, {{1,1},{-1,1},{-1,-1},{1,-1}});
 }
 
+vector<struct move> generate_queen_moves(struct game game, size_t pos)
+{
+    vector<struct square> directions = {
+        {0,1},{1,0},{0,-1},{-1,0},{1,1},{-1,1},{-1,-1},{1,-1}
+    };
+    return generate_sliding_moves(game, pos, directions);
+}
+
 vector<struct move> next_moves(struct game game)
 {
     vector<struct move> next_moves;
@@ -381,6 +389,7 @@ vector<struct move> next_moves(struct game game)
             moves = generate_bishop_moves(game, i);
             break;
         case type::queen:
+            moves = generate_queen_moves(game, i);
             break;
         case type::king:
             break;
