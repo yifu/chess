@@ -436,6 +436,20 @@ vector<struct move> generate_knight_moves(struct game game, size_t pos)
     return moves;
 }
 
+bool is_king_captured(struct game game)
+{
+    for(struct piece piece : game.pieces)
+    {
+        if(piece.type != type::king)
+            continue;
+        if(piece.color !=  game.cur_player)
+            continue;
+        return piece.is_captured;
+    }
+    assert(false);
+    return false;
+}
+
 vector<struct move> next_moves(struct game game)
 {
     vector<struct move> next_moves;
