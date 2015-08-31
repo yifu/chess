@@ -387,52 +387,38 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     // printf("Candidate: ");
                     // print_move(candidate_move);
 
+                    // TODO Refactor the following. Must be moved into game.cpp file?
+
                     bool candidate_is_ok = false;
                     vector<struct move> moves = next_moves(game);
                     for(struct move move : moves)
                     {
                         // print_move(move);
                         if(move == candidate_move)
+                        {
                             candidate_is_ok = true;
+
+                            struct game candidate_game = apply_move(game, candidate_move);
+                            vector<struct game> games = next_games(candidate_game);
+                            for(struct game next_game : games)
+                            {
+                                assert(next_game.cur_player == game.cur_player);
+                                if(is_king_captured(next_game))
+                                {
+                                    candidate_is_ok = false;
+                                    break;
+                                }
+                            }
+                        }
                     }
 
                     if(candidate_is_ok)
                     {
                         // printf("found one move!\n");
-                        if(!is_square_clear(game, dst))
-                        {
-                            size_t pos = find_piece_pos(game, dst);
-                            assert(pos < game.pieces.size());
-
-                            size_t sprite_pos = -1;
-                            for(size_t i = 0; i < sprites.size(); i++)
-                            {
-                                if(sprites[i].piece_pos == pos)
-                                    sprite_pos = i;
-                            }
-                            assert(sprite_pos < sprites.size());
-                            assert(!game.pieces[pos].is_captured);
-
-                            game.pieces[pos].is_captured = true;
-                            sprites[sprite_pos].rect = out_of_view_rect;
-                        }
-
-                        sprites[i].rect = square2rect(dst);
-                        sprites[i].is_dragged = false;
-
-                        piece.square = dst;
-
-                        game.moves.push_back(candidate_move);
-                        game.cur_player = opponent(game.cur_player);
+                        game = apply_move(game, candidate_move);
                     }
-                    else
-                    {
-                        // printf("Nope!\n");
-                        // Restore the piece in its orig square.
-                        assert(piece.square == src);
-                        sprites[i].rect = square2rect(src);
-                        sprites[i].is_dragged = false;
-                    }
+                    sprites = init_sprites(game);
+                    // print_game(game);
                 }
             }
             break;
