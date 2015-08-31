@@ -477,6 +477,10 @@ vector<struct move> next_moves(struct game game)
         struct piece piece = game.pieces[i];
         if(piece.color != game.cur_player)
             continue;
+        // TODO Find a solution. Too much issue with captured pieces.
+        // for_each_uncaptured_pieces() ?
+        if(piece.is_captured)
+            continue;
 
         vector<struct move> moves;
         switch(piece.type)
