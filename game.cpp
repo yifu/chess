@@ -367,6 +367,39 @@ vector<struct move> generate_queen_moves(struct game game, size_t pos)
     return generate_sliding_moves(game, pos, directions);
 }
 
+vector<struct move> generate_knight_moves(struct game game, size_t pos)
+{
+    vector<struct move> moves;
+    vector<struct square> directions = {
+        {1,2},{2,1},{2,-1},{1,-2},{-1,-2},{-2,-1},{-2,1},{-1,2}
+    };
+
+    for(struct square direction : directions)
+    {
+        struct piece knight = game.pieces[pos];
+        struct square src = knight.square;
+        struct square dst = src;
+
+        dst += direction;
+        if(is_valid_square(dst))
+        {
+            if(is_square_clear(game, dst))
+            {
+                moves.push_back({src,dst});
+            }
+            else
+            {
+                assert(!is_square_clear(game, dst));
+                size_t pos = find_piece_pos(game, dst);
+                assert(pos < game.pieces.size());
+                if(game.pieces[pos].color != game.cur_player)
+                    moves.push_back({src,dst});
+            }
+        }
+    }
+    return moves;
+}
+
 vector<struct move> next_moves(struct game game)
 {
     vector<struct move> next_moves;
@@ -386,6 +419,7 @@ vector<struct move> next_moves(struct game game)
             moves = generate_rook_moves(game, i);
             break;
         case type::knight:
+            moves = generate_knight_moves(game, i);
             break;
         case type::bishop:
             moves = generate_bishop_moves(game, i);
