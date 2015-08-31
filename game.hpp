@@ -53,6 +53,7 @@ bool operator == (struct move l, struct move r);
 void print_square(struct square square);
 void print_move(struct move move);
 void print_piece(struct piece piece);
+void print_game(struct game game);
 enum color opponent(enum color c);
 bool is_square_clear(struct game game, struct square square);
 bool is_king_captured(struct game game);

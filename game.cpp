@@ -51,18 +51,6 @@ bool operator == (struct move l, struct move r)
     return l.src == r.src && l.dst == r.dst;
 }
 
-void print_square(struct square square)
-{
-    printf("square={row=%d,col=%d}\n", square.row, square.col);
-}
-
-void print_move(struct move move)
-{
-    printf("move={src={%d,%d},dst={%d,%d}}\n",
-	   move.src.row, move.src.col,
-	   move.dst.row, move.src.col);
-}
-
 const char *color2string(enum color c)
 {
     switch(c)
@@ -87,6 +75,38 @@ const char *type2string(enum type t)
     default: assert(false); return "unknown";
     }
     return "-unknown-";
+}
+
+// TODO Overload all that?
+void print_square(struct square square)
+{
+    printf("square={row=%d,col=%d}\n", square.row, square.col);
+}
+
+void print_move(struct move move)
+{
+    printf("move={src={%d,%d},dst={%d,%d}}\n",
+	   move.src.row, move.src.col,
+	   move.dst.row, move.src.col);
+}
+
+void print_game(struct game game)
+{
+    printf("game={cur_player=%s, moves={",
+           color2string(game.cur_player));
+    for(struct move move : game.moves)
+    {
+        print_move(move);
+        printf(",");
+    }
+
+    printf("}, pieces={");
+    for(struct piece piece : game.pieces)
+    {
+        print_piece(piece);
+        printf(",");
+    }
+    printf("}}\n");
 }
 
 void print_piece(struct piece piece)
