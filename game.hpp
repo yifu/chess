@@ -1,5 +1,6 @@
 #pragma once
 
+#include <array>
 #include <vector>
 #include <stdint.h>
 
@@ -41,10 +42,10 @@ struct game
 {
     enum color cur_player = color::white;
     std::vector<struct move> moves;
-    std::vector<struct piece> pieces;
+    std::array<struct piece, 32> pieces;
 };
 
-extern std::vector<struct piece> initial_board;
+extern std::array<struct piece, 32> initial_board;
 
 bool operator == (struct square l, struct square r);
 bool operator == (struct move l, struct move r);

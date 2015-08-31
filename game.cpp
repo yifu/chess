@@ -5,7 +5,7 @@
 
 using namespace std;
 
-vector<struct piece> initial_board = {
+array<struct piece, 32> initial_board = {{
     {color::white, type::pawn, {1, 0}, false},
     {color::white, type::pawn, {1, 1}, false},
     {color::white, type::pawn, {1, 2}, false},
@@ -39,7 +39,7 @@ vector<struct piece> initial_board = {
     {color::black, type::bishop, {7, 5}, false},
     {color::black, type::queen, {7, 3}, false},
     {color::black, type::king, {7, 4}, false},
-};
+}};
 
 bool operator == (struct square l, struct square r)
 {
