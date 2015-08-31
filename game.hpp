@@ -56,6 +56,8 @@ void print_piece(struct piece piece);
 void print_game(struct game game);
 enum color opponent(enum color c);
 bool is_square_clear(struct game game, struct square square);
+struct game apply_move(struct game game, struct move move);
 bool is_king_captured(struct game game);
 std::vector<struct move> next_moves(struct game game);
+std::vector<struct game> next_games(struct game game);
 size_t find_piece_pos(struct game game, struct square square);

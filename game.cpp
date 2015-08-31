@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <assert.h>
+#include <algorithm>
 
 #include "game.hpp"
 
@@ -455,6 +456,30 @@ vector<struct move> generate_knight_moves(struct game game, size_t pos)
     return moves;
 }
 
+struct game apply_move(struct game game, struct move move)
+{
+    size_t src_pos, dst_pos;
+
+    game.moves.push_back(move);
+    game.cur_player = opponent(game.cur_player);
+
+    dst_pos = find_piece_pos(game, move.dst);
+    if(dst_pos == (size_t)-1)
+        goto init_src;
+
+    assert(dst_pos < game.pieces.size());
+    game.pieces[dst_pos].is_captured = true;
+
+// TODO Refactor that.
+// dst must be modified before src.
+init_src:
+    src_pos = find_piece_pos(game, move.src);
+    assert(src_pos < game.pieces.size());
+    game.pieces[src_pos].square = move.dst;
+
+    return game;
+}
+
 bool is_king_captured(struct game game)
 {
     for(struct piece piece : game.pieces)
@@ -471,7 +496,7 @@ bool is_king_captured(struct game game)
 
 vector<struct move> next_moves(struct game game)
 {
-    vector<struct move> next_moves;
+    vector<struct move> cur_player_moves;
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
         struct piece piece = game.pieces[i];
@@ -508,7 +533,19 @@ vector<struct move> next_moves(struct game game)
             break;
         }
 
-        next_moves.insert(next_moves.end(), moves.begin(), moves.end());
+        cur_player_moves.insert(cur_player_moves.end(), moves.begin(), moves.end());
     }
-    return next_moves;
+    return cur_player_moves;
+}
+
+vector<struct game> next_games(struct game game)
+{
+    vector<struct move> moves = next_moves(game);
+    vector<struct game> games;
+    games.reserve(moves.size());
+
+    for(struct move move : moves)
+        games.push_back(apply_move(game, move));
+
+    return games;
 }
