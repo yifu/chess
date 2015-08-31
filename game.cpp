@@ -323,25 +323,27 @@ vector<struct move> generate_sliding_moves(struct game game, size_t pos,
     vector<struct move> moves;
     for(square direction : directions)
     {
-        struct piece rook = game.pieces[pos];
-        struct square src = rook.square;
+        struct piece piece = game.pieces[pos];
+        struct square src = piece.square;
         struct square dst = src;
 
         dst += direction;
         while(is_valid_square(dst))
         {
-            if(!is_square_clear(game, dst))
+            if(is_square_clear(game, dst))
             {
+                moves.push_back({src,dst});
+                dst += direction;
+            }
+            else
+            {
+                assert(!is_square_clear(game, dst));
                 size_t pos = find_piece_pos(game, dst);
                 assert(pos < game.pieces.size());
-                if(game.pieces[pos].color == game.cur_player)
-                    break;
-            }
-            moves.push_back({src,dst});
-            if(!is_square_clear(game,dst))
+                if(game.pieces[pos].color != game.cur_player)
+                    moves.push_back({src,dst});
                 break;
-
-            dst += direction;
+            }
         }
     }
     return moves;
