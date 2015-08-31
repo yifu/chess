@@ -182,7 +182,6 @@ size_t find_piece_pos(struct game game, struct square square)
         if(piece.square == square)
             return i;
     }
-    assert(false);
     return -1;
 }
 
