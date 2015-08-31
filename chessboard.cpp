@@ -169,7 +169,7 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
 {
     SDL_Event e;
 
-    if(SDL_PollEvent(&e))
+    if(SDL_WaitEvent(&e))
     {
         switch(e.type)
         {
@@ -569,9 +569,6 @@ int main()
         assertInvariants(sprites, game);
         paint_screen(sprites);
         assertInvariants(sprites, game);
-
-        // TODO Implement an adaptative delay.
-        SDL_Delay(7);
     }
     printf("bye!\n");
 
