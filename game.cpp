@@ -352,6 +352,11 @@ vector<struct move> generate_rook_moves(struct game game, size_t pos)
     return generate_sliding_moves(game, pos, {{0,1},{1,0},{0,-1},{-1,0}});
 }
 
+vector<struct move> generate_bishop_moves(struct game game, size_t pos)
+{
+    return generate_sliding_moves(game, pos, {{1,1},{-1,1},{-1,-1},{1,-1}});
+}
+
 vector<struct move> next_moves(struct game game)
 {
     vector<struct move> next_moves;
@@ -373,6 +378,7 @@ vector<struct move> next_moves(struct game game)
         case type::knight:
             break;
         case type::bishop:
+            moves = generate_bishop_moves(game, i);
             break;
         case type::queen:
             break;
