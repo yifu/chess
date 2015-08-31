@@ -23,6 +23,16 @@ LDLIBS=$(shell sdl2-config --libs) -lSDL2_image
 #multiple object files (presumably coming from various other source
 #files), one of which has a name matching that of the executable
 #file. Thus, x: y.o z.o when x.c, y.c and z.c all exist[...]
+
+debug: CXXFLAGS += -DDEBUG
+debug: chessboard
+
+release: CXXFLAGS += -DNDEBUG -O3
+release: chessboard
+
+clean:
+	rm chessboard *.o
+
 chessboard: utils.o game.o
 utils.o: utils.hpp utils.cpp
 game.o: game.hpp game.cpp
