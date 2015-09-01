@@ -493,8 +493,6 @@ void initWindowIcon()
         cerr << "IMG_Load() error : " << IMG_GetError() << endl;
         exit_failure();
     }
-    // icon = SDL_ConvertSurfaceFormat(icon, SDL_PIXELFORMAT_ARGB8888, 0);
-    // assert(icon->format->format == SDL_PIXELFORMAT_ARGB8888);
     // printf("Set Window icon.\n");
     SDL_SetWindowIcon(display, icon);
 }
