@@ -288,7 +288,7 @@ struct sprite init_sprite(size_t piece_pos, struct game game, SDL_Texture *textu
     sprite.tex = texture;
     sprite.rect = piece.is_captured ? out_of_view_rect : square2rect(piece.square);
     sprite.piece_pos = piece_pos;
-    print_rect(sprite.rect);
+    // print_rect(sprite.rect);
     return sprite;
 }
 
@@ -429,7 +429,7 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
         }
         default:
         {
-            printf("e.type=%d\n", e.type);
+            // printf("e.type=%d\n", e.type);
             break;
         }
         }
@@ -495,7 +495,7 @@ void initWindowIcon()
     }
     // icon = SDL_ConvertSurfaceFormat(icon, SDL_PIXELFORMAT_ARGB8888, 0);
     // assert(icon->format->format == SDL_PIXELFORMAT_ARGB8888);
-    printf("Set Window icon.\n");
+    // printf("Set Window icon.\n");
     SDL_SetWindowIcon(display, icon);
 }
 
