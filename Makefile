@@ -25,10 +25,10 @@ LDLIBS=$(shell sdl2-config --libs) -lSDL2_image
 #file. Thus, x: y.o z.o when x.c, y.c and z.c all exist[...]
 
 debug: CXXFLAGS += -DDEBUG
-debug: chessboard
+debug: chessboard server
 
 release: CXXFLAGS += -DNDEBUG -O3
-release: chessboard
+release: chessboard server
 
 clean:
 	rm chessboard *.o
@@ -36,4 +36,4 @@ clean:
 chessboard: utils.o game.o
 utils.o: utils.hpp utils.cpp
 game.o: game.hpp game.cpp
-
+server: utils.o game.o
