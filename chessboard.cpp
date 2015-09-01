@@ -403,6 +403,10 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     // need to define a separated 'dragged piece'.
                     sprites = init_sprites(game);
                     // print_game(game);
+                    if(next_valid_moves(game).size() == 0)
+                    {
+                        printf("CHECKMATE!!\n");
+                    }
                 }
             }
             break;
