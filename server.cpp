@@ -48,15 +48,15 @@ int main()
     }
 
     // TODO Read man page for accept4(). And possible errors.
-    int first_fd = accept(listen_fd, nullptr, nullptr);
-    if(first_fd == -1)
+    int white_fd = accept(listen_fd, nullptr, nullptr);
+    if(white_fd == -1)
     {
         perror("accept():");
         exit(EXIT_FAILURE);
     }
 
-    int second_fd = accept(listen_fd, nullptr, nullptr);
-    if(second_fd == -1)
+    int black_fd = accept(listen_fd, nullptr, nullptr);
+    if(black_fd == -1)
     {
         perror("accept():");
         exit(EXIT_FAILURE);
