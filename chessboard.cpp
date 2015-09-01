@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <stdint.h>
 #include <vector>
+#include <algorithm>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -389,30 +390,9 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
 
                     // TODO Refactor the following. Must be moved into game.cpp file?
 
-                    bool candidate_is_ok = false;
-                    vector<struct move> moves = next_moves(game);
-                    for(struct move move : moves)
-                    {
-                        // print_move(move);
-                        if(move == candidate_move)
-                        {
-                            candidate_is_ok = true;
-
-                            struct game candidate_game = apply_move(game, candidate_move);
-                            vector<struct game> games = next_games(candidate_game);
-                            for(struct game next_game : games)
-                            {
-                                assert(next_game.cur_player == game.cur_player);
-                                if(is_king_captured(next_game))
-                                {
-                                    candidate_is_ok = false;
-                                    break;
-                                }
-                            }
-                        }
-                    }
-
-                    if(candidate_is_ok)
+                    vector<struct move> valid_moves = next_valid_moves(game);
+                    auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
+                    if(found != valid_moves.end())
                     {
                         // printf("found one move!\n");
                         // TODO We may overwrite with the candidate_game above.
