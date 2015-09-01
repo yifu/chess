@@ -405,7 +405,10 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     // print_game(game);
                     if(next_valid_moves(game).size() == 0)
                     {
-                        printf("CHECKMATE!!\n");
+                        if(is_king_checked(game))
+                            printf("CHECKMATE!!\n");
+                        else
+                            printf("STALEMATE!!\n");
                     }
                 }
             }

@@ -62,3 +62,4 @@ std::vector<struct move> next_moves(struct game game);
 std::vector<struct game> next_games(struct game game);
 std::vector<struct move> next_valid_moves(struct game game);
 size_t find_piece_pos(struct game game, struct square square);
+bool is_king_checked(struct game game);

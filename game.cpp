@@ -576,3 +576,14 @@ vector<struct move> next_valid_moves(struct game game)
 
     return moves;
 }
+
+bool is_king_checked(struct game game)
+{
+    game.cur_player = opponent(game.cur_player);
+    for(struct game next_game : next_games(game))
+    {
+        if(is_king_captured(next_game))
+            return true;
+    }
+    return false;
+}
