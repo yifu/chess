@@ -549,3 +549,30 @@ vector<struct game> next_games(struct game game)
 
     return games;
 }
+
+vector<struct move> next_valid_moves(struct game game)
+{
+    vector<struct move> moves;
+
+    for(struct move move : next_moves(game))
+    {
+        struct game i = apply_move(game, move);
+        assert(i.cur_player != game.cur_player);
+
+        bool is_valid = true;
+        for(struct game j : next_games(i))
+        {
+            assert(j.cur_player == game.cur_player);
+            if(is_king_captured(j))
+            {
+                is_valid = false;
+                break;
+            }
+        }
+
+        if(is_valid)
+            moves.push_back(move);
+   }
+
+    return moves;
+}
