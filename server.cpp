@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <netinet/ip.h>
+#include <netinet/tcp.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -23,7 +24,15 @@ int main()
                          &optval, sizeof(optval));
     if(res == -1)
     {
-        perror("setsockopt():");
+        perror("setsockopt(SO_REUSEADDR):");
+        exit(EXIT_FAILURE);
+    }
+
+    res = setsockopt(listen_fd, IPPROTO_TCP, TCP_NODELAY,
+                     &optval, sizeof(optval));
+    if(res == -1)
+    {
+        perror("setsockopt(TCP_NODELAY):");
         exit(EXIT_FAILURE);
     }
 
