@@ -578,6 +578,16 @@ void init_network()
         perror("send()");
         exit_failure();
     }
+
+    struct login_ack login_ack;
+    int n = recv(fd, &login_ack, sizeof(login_ack), 0);
+    if(n == -1)
+    {
+        perror("recv()");
+        exit_failure();
+    }
+    printf("login_ack={player_color=%d}\n", login_ack.player_color);
+    fflush(stdout);
 }
 
 int main()
