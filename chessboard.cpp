@@ -5,6 +5,8 @@
 #include <stdint.h>
 #include <vector>
 #include <algorithm>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -534,9 +536,29 @@ void init_sdl()
     init_textures();
 }
 
+void init_network()
+{
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    if(fd == -1)
+    {
+        perror("socket():");
+        exit_failure();
+    }
+
+    int optval = 1;
+    int res = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY,
+                         &optval, sizeof(optval));
+    if(res == -1)
+    {
+        perror("setsockopt(TCP_NODELAY):");
+        exit(EXIT_FAILURE);
+    }
+}
+
 int main()
 {
     init_sdl();
+    init_network();
 
     struct game game;
     game.pieces = initial_board;
