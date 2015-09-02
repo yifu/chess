@@ -3,12 +3,21 @@
 #include <netinet/tcp.h>
 #include <stdlib.h>
 #include <string.h>
+#include <poll.h>
+#include <vector>
+#include <assert.h>
+#include <unistd.h>
+
+#include "net_protocol.hpp"
 
 using namespace std;
 
 // TODO Handle SIGFPIPE
 
 int listen_fd = -1;
+
+struct pollfd fds[100]; // TODO MAX FD PER PROCESSUS?
+size_t sz = 0;
 
 int main()
 {
@@ -18,6 +27,9 @@ int main()
         perror("socket()");
         exit(EXIT_FAILURE);
     }
+
+    printf("listen fd = %d.\n", listen_fd);
+    fds[sz++] = { listen_fd, POLLIN, 0 };
 
     int optval = 1;
     int res = setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
@@ -56,18 +68,67 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-    // TODO Read man page for accept4(). And possible errors.
-    int white_fd = accept(listen_fd, nullptr, nullptr);
-    if(white_fd == -1)
-    {
-        perror("accept()");
-        exit(EXIT_FAILURE);
-    }
 
-    int black_fd = accept(listen_fd, nullptr, nullptr);
-    if(black_fd == -1)
+    while(true)
     {
-        perror("accept()");
-        exit(EXIT_FAILURE);
+        int nfds = poll(&fds[0], sz, -1/*timeout*/);
+
+        if(nfds == -1)
+        {
+            perror("poll()");
+            exit(EXIT_FAILURE);
+        }
+
+        for(size_t i = 0; i < sz; i++)
+        {
+            struct pollfd pollfd = fds[i];
+            int fd = pollfd.fd;
+            if(pollfd.revents != 0)
+            {
+                if(fd == listen_fd)
+                {
+                    // TODO Read man page for accept4(). And possible errors.
+                    int new_fd = accept(fd, nullptr, nullptr);
+                    if(new_fd == -1)
+                    {
+                        perror("accept()");
+                        exit(EXIT_FAILURE);
+                    }
+                    printf("accepted fd = %d.\n", new_fd);
+                    fds[sz++] = {new_fd, POLLIN|POLLHUP, 0};
+                }
+                else
+                {
+                    assert(pollfd.revents & (POLLIN));
+                    char buf[1024];
+                    int n = recv(fd, buf, sizeof(buf), 0);
+                    if(n == -1)
+                    {
+                        perror("recv()");
+                        exit(EXIT_FAILURE);
+                    }
+                    else if(n == 0)
+                    {
+                        printf("close fd = %d.\n", fd);
+                        res = close(fd);
+                        if(res == -1)
+                        {
+                            perror("close()");
+                            exit(EXIT_FAILURE);
+                        }
+                        fds[i] = {-1,0,0};
+                    }
+                    else
+                    {
+                        printf("recv = %s.\n", buf);
+                    }
+                }
+                nfds--;
+            }
+        }
+
+        // remove(fds, fds+sz, fd);
+        // sz--;
+
     }
 }
