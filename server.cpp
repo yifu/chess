@@ -19,11 +19,24 @@ int listen_fd = -1;
 struct pollfd fds[100]; // TODO MAX FD PER PROCESSUS?
 size_t sz = 0;
 
-void process_login(struct login *login)
+void process_login(int fd, struct login *login)
 {
     printf("login={msg type=%d, username=%.*s}\n",
            login->msg_type,
            (int)sizeof(login->username), login->username);
+
+    // TODO POLLOUT or not POLLOUT?
+    struct login_ack login_ack;
+    login_ack.msg_type = msg_type::login_ack;
+    login_ack.player_color = player_color::white;
+    int n = send(fd, &login_ack, sizeof(login_ack), 0);
+    if(n == -1)
+    {
+        perror("send()");
+        exit(EXIT_FAILURE);
+    }
+    printf("login ack sent!\n");
+    fflush(stdout);
 }
 
 void process_listen_fd(int fd)
@@ -70,7 +83,7 @@ void process_player_fd(int i, struct pollfd pollfd)
         printf("recv=%d, msg_type=%d.\n", n, type);
         switch(type)
         {
-        case msg_type::login: process_login((struct login*)buf); break;
+        case msg_type::login: process_login(fd, (struct login*)buf); break;
         default: printf("Unknown msg type = %d.\n", type);  break;
         }
     }
