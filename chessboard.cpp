@@ -553,6 +553,19 @@ void init_network()
         perror("setsockopt(TCP_NODELAY):");
         exit(EXIT_FAILURE);
     }
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(55555);
+    addr.sin_addr.s_addr = INADDR_ANY;
+
+    res = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
+    if(res == -1)
+    {
+        perror("connect()");
+        exit_failure();
+    }
 }
 
 int main()
