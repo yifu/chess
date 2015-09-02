@@ -19,6 +19,13 @@ int listen_fd = -1;
 struct pollfd fds[100]; // TODO MAX FD PER PROCESSUS?
 size_t sz = 0;
 
+void process_login(struct login *login)
+{
+    printf("login={msg type=%d, username=%.*s}\n",
+           login->msg_type,
+           (int)sizeof(login->username), login->username);
+}
+
 void process_listen_fd(int fd)
 {
     // TODO Read man page for accept4(). And possible errors.
@@ -38,6 +45,8 @@ void process_player_fd(int i, struct pollfd pollfd)
 
     int fd = pollfd.fd;
     char buf[1024];
+
+    // TODO Replace with while(n = recv(...)) {...}
     int n = recv(fd, buf, sizeof(buf), 0);
     if(n == -1)
     {
@@ -57,7 +66,13 @@ void process_player_fd(int i, struct pollfd pollfd)
     }
     else
     {
-        printf("recv = %s.\n", buf);
+        enum msg_type type = (enum msg_type)buf[0];
+        printf("recv=%d, msg_type=%d.\n", n, type);
+        switch(type)
+        {
+        case msg_type::login: process_login((struct login*)buf); break;
+        default: printf("Unknown msg type = %d.\n", type);  break;
+        }
     }
 }
 

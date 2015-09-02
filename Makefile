@@ -33,7 +33,9 @@ release: chessboard server
 clean:
 	rm chessboard *.o
 
-chessboard: utils.o game.o
 utils.o: utils.hpp utils.cpp
 game.o: game.hpp game.cpp
-server: utils.o game.o
+net_protocol.o: net_protocol.hpp
+
+chessboard: utils.o game.o net_protocol.o
+server: utils.o game.o net_protocol.o

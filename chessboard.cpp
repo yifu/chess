@@ -570,6 +570,7 @@ void init_network()
     }
 
     struct login login;
+    login.msg_type = msg_type::login;
     strncpy(login.username, "yves", sizeof(login.username));
     res = send(fd, &login, sizeof(login), 0);
     if(res == -1)
