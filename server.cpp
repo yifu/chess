@@ -110,7 +110,6 @@ int main()
         exit(EXIT_FAILURE);
     }
 
-
     while(true)
     {
         int nfds = poll(&fds[0], sz, -1/*timeout*/);
