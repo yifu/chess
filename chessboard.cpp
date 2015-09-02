@@ -498,7 +498,7 @@ void paint_screen(vector<struct sprite> sprites)
     SDL_UpdateWindowSurface(display);
 }
 
-int main()
+void init_sdl()
 {
     constexpr int screenwidth = 640;
     constexpr int screenheigh = 640;
@@ -532,6 +532,11 @@ int main()
     SDL_ShowWindow(display);
 
     init_textures();
+}
+
+int main()
+{
+    init_sdl();
 
     struct game game;
     game.pieces = initial_board;
