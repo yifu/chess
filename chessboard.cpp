@@ -13,6 +13,7 @@
 
 #include "utils.hpp"
 #include "game.hpp"
+#include "net_protocol.hpp"
 
 using namespace std;
 
@@ -560,10 +561,20 @@ void init_network()
     addr.sin_port = htons(55555);
     addr.sin_addr.s_addr = INADDR_ANY;
 
+    // TODO Handle SIGFPIPE.
     res = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
     if(res == -1)
     {
         perror("connect()");
+        exit_failure();
+    }
+
+    struct login login;
+    strncpy(login.username, "yves", sizeof(login.username));
+    res = send(fd, &login, sizeof(login), 0);
+    if(res == -1)
+    {
+        perror("send()");
         exit_failure();
     }
 }
