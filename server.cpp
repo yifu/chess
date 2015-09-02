@@ -15,7 +15,7 @@ int main()
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
     if(listen_fd == -1)
     {
-        perror("socket():");
+        perror("socket()");
         exit(EXIT_FAILURE);
     }
 
@@ -24,7 +24,7 @@ int main()
                          &optval, sizeof(optval));
     if(res == -1)
     {
-        perror("setsockopt(SO_REUSEADDR):");
+        perror("setsockopt(SO_REUSEADDR)");
         exit(EXIT_FAILURE);
     }
 
@@ -32,7 +32,7 @@ int main()
                      &optval, sizeof(optval));
     if(res == -1)
     {
-        perror("setsockopt(TCP_NODELAY):");
+        perror("setsockopt(TCP_NODELAY)");
         exit(EXIT_FAILURE);
     }
 
@@ -45,14 +45,14 @@ int main()
     res = bind(listen_fd, (sockaddr*)&listen_addr, sizeof(listen_addr));
     if(res == -1)
     {
-        perror("bind():");
+        perror("bind()");
         exit(EXIT_FAILURE);
     }
 
     res = listen(listen_fd, 10/*backlog*/);
     if(res == -1)
     {
-        perror("listen():");
+        perror("listen()");
         exit(EXIT_FAILURE);
     }
 
@@ -60,14 +60,14 @@ int main()
     int white_fd = accept(listen_fd, nullptr, nullptr);
     if(white_fd == -1)
     {
-        perror("accept():");
+        perror("accept()");
         exit(EXIT_FAILURE);
     }
 
     int black_fd = accept(listen_fd, nullptr, nullptr);
     if(black_fd == -1)
     {
-        perror("accept():");
+        perror("accept()");
         exit(EXIT_FAILURE);
     }
 }

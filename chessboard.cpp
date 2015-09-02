@@ -541,7 +541,7 @@ void init_network()
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd == -1)
     {
-        perror("socket():");
+        perror("socket()");
         exit_failure();
     }
 
@@ -550,7 +550,7 @@ void init_network()
                          &optval, sizeof(optval));
     if(res == -1)
     {
-        perror("setsockopt(TCP_NODELAY):");
+        perror("setsockopt(TCP_NODELAY)");
         exit(EXIT_FAILURE);
     }
 
