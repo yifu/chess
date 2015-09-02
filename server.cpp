@@ -19,6 +19,48 @@ int listen_fd = -1;
 struct pollfd fds[100]; // TODO MAX FD PER PROCESSUS?
 size_t sz = 0;
 
+void process_listen_fd(int fd)
+{
+    // TODO Read man page for accept4(). And possible errors.
+    int new_fd = accept(fd, nullptr, nullptr);
+    if(new_fd == -1)
+    {
+        perror("accept()");
+        exit(EXIT_FAILURE);
+    }
+    printf("accepted fd = %d.\n", new_fd);
+    fds[sz++] = {new_fd, POLLIN, 0};
+}
+
+void process_player_fd(int i, struct pollfd pollfd)
+{
+    assert(pollfd.revents & (POLLIN));
+
+    int fd = pollfd.fd;
+    char buf[1024];
+    int n = recv(fd, buf, sizeof(buf), 0);
+    if(n == -1)
+    {
+        perror("recv()");
+        exit(EXIT_FAILURE);
+    }
+    else if(n == 0)
+    {
+        printf("close fd = %d.\n", fd);
+        int res = close(fd);
+        if(res == -1)
+        {
+            perror("close()");
+            exit(EXIT_FAILURE);
+        }
+        fds[i] = {-1,0,0};
+    }
+    else
+    {
+        printf("recv = %s.\n", buf);
+    }
+}
+
 int main()
 {
     listen_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -87,41 +129,11 @@ int main()
             {
                 if(fd == listen_fd)
                 {
-                    // TODO Read man page for accept4(). And possible errors.
-                    int new_fd = accept(fd, nullptr, nullptr);
-                    if(new_fd == -1)
-                    {
-                        perror("accept()");
-                        exit(EXIT_FAILURE);
-                    }
-                    printf("accepted fd = %d.\n", new_fd);
-                    fds[sz++] = {new_fd, POLLIN|POLLHUP, 0};
+                    process_listen_fd(fd);
                 }
                 else
                 {
-                    assert(pollfd.revents & (POLLIN));
-                    char buf[1024];
-                    int n = recv(fd, buf, sizeof(buf), 0);
-                    if(n == -1)
-                    {
-                        perror("recv()");
-                        exit(EXIT_FAILURE);
-                    }
-                    else if(n == 0)
-                    {
-                        printf("close fd = %d.\n", fd);
-                        res = close(fd);
-                        if(res == -1)
-                        {
-                            perror("close()");
-                            exit(EXIT_FAILURE);
-                        }
-                        fds[i] = {-1,0,0};
-                    }
-                    else
-                    {
-                        printf("recv = %s.\n", buf);
-                    }
+                    process_player_fd(i, pollfd);
                 }
                 nfds--;
             }
