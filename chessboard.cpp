@@ -557,5 +557,3 @@ int main()
 
     exit_success();
 }
-
-// g++ -Wall -Wextra -ggdb -std=c++11 chessboard.cpp $(sdl2-config --cflags --libs) -lSDL2_image
