@@ -19,6 +19,8 @@ int listen_fd = -1;
 struct pollfd fds[100]; // TODO MAX FD PER PROCESSUS?
 size_t sz = 0;
 
+enum color last_color = color::black;
+
 void process_login(int fd, struct login *login)
 {
     printf("login={msg type=%d, username=%.*s}\n",
@@ -28,7 +30,18 @@ void process_login(int fd, struct login *login)
     // TODO POLLOUT or not POLLOUT?
     struct login_ack login_ack;
     login_ack.msg_type = msg_type::login_ack;
-    login_ack.player_color = color::white;
+
+    if(last_color == color::white)
+    {
+        login_ack.player_color = color::black;
+        last_color = color::black;
+    }
+    else
+    {
+        login_ack.player_color = color::white;
+        last_color = color::white;
+    }
+
     int n = send(fd, &login_ack, sizeof(login_ack), 0);
     if(n == -1)
     {
