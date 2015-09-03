@@ -578,6 +578,34 @@ int main()
     {
         process_input_events(game);
 
+        char buf[1024];
+        int n = recv(fd, buf, sizeof(buf), MSG_DONTWAIT);
+        if(n < 0)
+        {
+            if(errno != EAGAIN && errno != EWOULDBLOCK)
+            {
+                printf("recv");
+                perror("recv()");
+                exit_failure();
+            }
+        }
+        else
+        {
+            enum msg_type type = (enum msg_type)buf[0];
+            printf("msg type=%d.\n", type);
+            if(type != msg_type::move_msg)
+            {
+                printf("error!\n");
+                continue;
+            }
+            struct move_msg msg = (*(struct move_msg*)buf);
+            struct move move;
+            move.src.row = msg.src_row;
+            move.src.col = msg.src_col;
+            move.dst.row = msg.dst_row;
+            move.dst.col = msg.dst_col;
+            game = apply_move(game, move);
+        }
 
         paint_screen(game);
     }
