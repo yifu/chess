@@ -7,6 +7,7 @@ enum class msg_type : uint8_t
 {
     login = 0x01,
     login_ack = 0x02,
+    move_msg = 0x03,
 };
 
 #pragma pack(push,1)
@@ -22,6 +23,12 @@ struct login_ack
 {
     enum msg_type msg_type;
     enum color player_color;
+};
+
+struct move_msg
+{
+    enum msg_type msg_type;
+    uint8_t src_row, src_col, dst_row, dst_col;
 };
 
 #pragma pack(pop)

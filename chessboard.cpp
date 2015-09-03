@@ -42,6 +42,7 @@ int square_width, square_heigh;
 
 SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square_heigh };
 
+int fd = -1;
 enum color player_color;
 
 bool operator != (SDL_Rect l, SDL_Rect r)
@@ -325,6 +326,23 @@ vector<struct sprite> init_sprites(struct game game)
     return sprites;
 }
 
+void send_move(struct move move)
+{
+    assert(fd != -1);
+    struct move_msg move_msg;
+    move_msg.msg_type = msg_type::move_msg;
+    move_msg.src_row = move.src.row;
+    move_msg.src_col = move.src.col;
+    move_msg.dst_row = move.dst.row;
+    move_msg.dst_col = move.dst.col;
+    int n = send(fd, &move_msg, sizeof(move_msg), 0);
+    if(n == -1)
+    {
+        perror("send()");
+        exit_failure();
+    }
+}
+
 void process_input_events(vector<struct sprite>& sprites, struct game& game)
 {
     SDL_Event e;
@@ -412,6 +430,7 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                         // printf("found one move!\n");
                         // TODO We may overwrite with the candidate_game above.
                         game = apply_move(game, candidate_move);
+                        send_move(candidate_move);
                     }
                     // TODO Better to call that from the top of the
                     // event loop. In the paint_sprites() call. We may
@@ -551,7 +570,7 @@ void init_sdl()
 
 void init_network()
 {
-    int fd = socket(AF_INET, SOCK_STREAM, 0);
+    fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd == -1)
     {
         perror("socket()");

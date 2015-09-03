@@ -52,6 +52,35 @@ void process_login(int fd, struct login *login)
     fflush(stdout);
 }
 
+int find_opponent_fd(int fd)
+{
+    for(size_t i = 0; i < sz; i++)
+    {
+        if(fds[i].fd == listen_fd)
+            continue;
+        if(fds[i].fd == fd)
+            continue;
+        return fds[i].fd;
+    }
+    assert(false);
+    return -1;
+}
+
+void process_move(int fd, struct move_msg *move_msg)
+{
+    printf("move_msg={src={row=%d,col=%d},dst={row=%d,col=%d}}\n",
+           move_msg->src_row, move_msg->dst_col,
+           move_msg->dst_row, move_msg->dst_col);
+    int opponent_fd = find_opponent_fd(fd);
+    assert(opponent_fd != -1);
+    int n = send(opponent_fd, move_msg, sizeof(*move_msg), 0);
+    if(n == -1)
+    {
+        perror("send()");
+        exit(EXIT_FAILURE);
+    }
+}
+
 void process_listen_fd(int fd)
 {
     // TODO Read man page for accept4(). And possible errors.
@@ -96,8 +125,15 @@ void process_player_fd(int i, struct pollfd pollfd)
         printf("recv=%d, msg_type=%d.\n", n, type);
         switch(type)
         {
-        case msg_type::login: process_login(fd, (struct login*)buf); break;
-        default: printf("Unknown msg type = %d.\n", type);  break;
+        case msg_type::login:
+            process_login(fd, (struct login*)buf);
+            break;
+        case msg_type::move_msg:
+            process_move(fd, (struct move_msg*)buf);
+            break;
+        default:
+            printf("Unknown msg type=%d.\n", type);
+            break;
         }
     }
 }
