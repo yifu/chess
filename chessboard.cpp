@@ -51,26 +51,42 @@ bool operator != (SDL_Rect l, SDL_Rect r)
 
 struct square detect_square(Sint32 x, Sint32 y)
 {
-    // TODO If player is black, then the coordinates are inversed.
-
     struct square result;
     result.row = y / square_heigh;
     result.col = x / square_width;
-    assert(result.row <= 7);
-    assert(result.col <= 7);
+    if(player_color == color::white)
+    {
+        result.row = 8 - result.row - 1;
+        result.col = 8 - result.col - 1;
+    }
+
+    assert(result.row >= 0 && result.row <= 7);
+    assert(result.col >= 0 && result.col <= 7);
+    print_square(result);
     return result;
 }
 
 SDL_Rect square2rect(struct square square)
 {
-    assert(square.row <= 7);
-    assert(square.col <= 7);
+    assert(square.row >= 0 && square.row <= 7);
+    assert(square.col >= 0 && square.col <= 7);
+    if(player_color == color::white)
+    {
+        square.row = 8 - square.row - 1;
+        square.col = 8 - square.col - 1;
+    }
 
-    // TODO A variable must tell what is the color of the end user of
-    // this application instance. His color must appear bottom side.
     SDL_Rect rect;
     rect.x = square.col * square_width;
     rect.y = square.row * square_heigh;
+
+    // if(player_color == color::white)
+    // {
+    //     // rect.x = (square_width * 8) - (square.col+1) * square_width;
+    //     // rect.y = (square_heigh * 8) - (square.row+1) * square_heigh;
+    //     rect.row = 8 - result.row - 1;
+    //     rect.col = 8 - result.col - 1;
+    // }
     rect.w = square_width;
     rect.h = square_heigh;
     return rect;
@@ -284,16 +300,11 @@ SDL_Texture *deduct_texture(struct piece piece)
     return nullptr;
 }
 
-struct sprite init_sprite(size_t piece_pos, struct game game, SDL_Texture *texture)
+struct sprite init_sprite(struct piece piece)
 {
-    assert(piece_pos < game.pieces.size());
-    assert(texture);
-
-    struct piece piece = game.pieces[piece_pos];
     struct sprite sprite;
-    sprite.tex = texture;
+    sprite.tex = deduct_texture(piece);
     sprite.rect = piece.is_captured ? out_of_view_rect : square2rect(piece.square);
-    sprite.piece_pos = piece_pos;
     // print_rect(sprite.rect);
     return sprite;
 }
@@ -304,9 +315,8 @@ vector<struct sprite> init_sprites(struct game game)
 
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
-        SDL_Texture *texture = deduct_texture(game.pieces[i]);
-        // TODO Refactor init_sprite(). It should take only a struct piece as a parameter.
-        struct sprite sprite = init_sprite(i, game, texture);
+        struct sprite sprite = init_sprite(game.pieces[i]);
+        sprite.piece_pos = i;
         sprites.push_back(sprite);
     }
     // printf("init pieces=%lu, sprites = %lu.\n",
