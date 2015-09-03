@@ -45,6 +45,9 @@ SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square
 int fd = -1;
 enum color player_color;
 
+size_t dragged_piece = -1;
+SDL_MouseMotionEvent mouse;
+
 bool operator != (SDL_Rect l, SDL_Rect r)
 {
     return l.x != r.x || l.y != r.y || l.w != r.w || l.h != r.h;
@@ -80,14 +83,6 @@ SDL_Rect square2rect(struct square square)
     SDL_Rect rect;
     rect.x = square.col * square_width;
     rect.y = square.row * square_heigh;
-
-    // if(player_color == color::white)
-    // {
-    //     // rect.x = (square_width * 8) - (square.col+1) * square_width;
-    //     // rect.y = (square_heigh * 8) - (square.row+1) * square_heigh;
-    //     rect.row = 8 - result.row - 1;
-    //     rect.col = 8 - result.col - 1;
-    // }
     rect.w = square_width;
     rect.h = square_heigh;
     return rect;
@@ -156,36 +151,6 @@ uint64_t substract_time(struct timespec l, struct timespec r)
         result = nsec;
     }
     return result;
-}
-
-void assertInvariants(vector<struct sprite> sprites, struct game game)
-{
-    int dragged_sprite_cnt = 0;
-    for(auto sprite : sprites)
-    {
-        assert(sprite.piece_pos < game.pieces.size());
-        struct piece piece = game.pieces[sprite.piece_pos];
-
-        if(sprite.is_dragged)
-        {
-            assert(!piece.is_captured);
-            assert(sprite.rect != out_of_view_rect);
-            dragged_sprite_cnt++;
-            continue;
-        }
-
-        if(piece.is_captured)
-        {
-            assert(sprite.rect == out_of_view_rect);
-        }
-        else
-        {
-            assert(sprite.rect != out_of_view_rect);
-            SDL_Rect rect = square2rect(piece.square);
-            assert(sprite.rect == rect);
-        }
-    }
-    assert(dragged_sprite_cnt == 0 || dragged_sprite_cnt == 1);
 }
 
 void clean_up()
@@ -310,22 +275,6 @@ struct sprite init_sprite(struct piece piece)
     return sprite;
 }
 
-vector<struct sprite> init_sprites(struct game game)
-{
-    vector<struct sprite> sprites;
-
-    for(size_t i = 0; i < game.pieces.size(); i++)
-    {
-        struct sprite sprite = init_sprite(game.pieces[i]);
-        sprite.piece_pos = i;
-        sprites.push_back(sprite);
-    }
-    // printf("init pieces=%lu, sprites = %lu.\n",
-    //     pieces.size(), sprites.size());
-
-    return sprites;
-}
-
 void send_move(struct move move)
 {
     assert(fd != -1);
@@ -343,7 +292,7 @@ void send_move(struct move move)
     }
 }
 
-void process_input_events(vector<struct sprite>& sprites, struct game& game)
+void process_input_events(struct game& game)
 {
     SDL_Event e;
 
@@ -366,60 +315,40 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
         }
         case SDL_MOUSEMOTION:
         {
-            // print_mouse_motion(e);
-            bool found = false; // TODO int count?
-            for(size_t i = 0; i < sprites.size(); i++)
-            {
-                if(sprites[i].is_dragged)
-                {
-                    assert(!found);
-                    found = true;
-                    // TODO Implement a function: updateDraggedXY() or updateDraggedSpritePos()...
-                    sprites[i].rect.x = e.motion.x - square_width / 2;
-                    sprites[i].rect.y = e.motion.y - square_heigh / 2;
-                }
-            }
-
-
+            mouse = e.motion;
             break;
         }
         case SDL_MOUSEBUTTONDOWN:
         {
-            // print_mouse_button_event(e);
-            for(size_t i = 0; i < sprites.size(); i++)
+            print_mouse_button_event(e);
+            bool found = false;
+            for(size_t i = 0; i < game.pieces.size(); i++)
             {
-                if(is_hitting_rect(sprites[i].rect, e.button.x, e.button.y))
+                SDL_Rect rect = square2rect(game.pieces[i].square);
+                if(is_hitting_rect(rect, e.button.x, e.button.y))
                 {
-                    assert(sprites[i].piece_pos < game.pieces.size());
-                    if(game.pieces[sprites[i].piece_pos].color != game.cur_player)
+                    if(game.pieces[i].color != game.cur_player)
                         break;
-
-                    sprites[i].rect.x = e.motion.x - square_width / 2;
-                    sprites[i].rect.y = e.motion.y - square_heigh / 2;
-                    sprites[i].is_dragged = true;
+                    found = true;
+                    dragged_piece = i;
                 }
             }
+            printf("found = %d.\n", found);
             break;
         }
         case SDL_MOUSEBUTTONUP:
         {
-            // print_mouse_button_event(e);
             bool found = false;
-            for(size_t i = 0; i < sprites.size(); i++)
+            for(size_t i = 0; i < game.pieces.size(); i++)
             {
-                if(sprites[i].is_dragged)
+                if(i == dragged_piece)
                 {
                     assert(!found);
                     found = true;
-
-                    assert(sprites[i].piece_pos < game.pieces.size());
-
-                    struct piece& piece = game.pieces[sprites[i].piece_pos];
+                    struct piece& piece = game.pieces[i];
                     struct square src = piece.square;
                     struct square dst = detect_square(e.button.x, e.button.y);
                     struct move candidate_move = {src, dst};
-                    // printf("Candidate: ");
-                    // print_move(candidate_move);
 
                     // TODO Refactor the following. Must be moved into game.cpp file?
 
@@ -427,23 +356,23 @@ void process_input_events(vector<struct sprite>& sprites, struct game& game)
                     auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
                     if(found != valid_moves.end())
                     {
-                        // printf("found one move!\n");
                         // TODO We may overwrite with the candidate_game above.
                         game = apply_move(game, candidate_move);
                         send_move(candidate_move);
+
+                        if(next_valid_moves(game).size() == 0)
+                        {
+                            if(is_king_checked(game))
+                                printf("CHECKMATE!!\n");
+                            else
+                                printf("STALEMATE!!\n");
+                        }
                     }
                     // TODO Better to call that from the top of the
                     // event loop. In the paint_sprites() call. We may
                     // need to define a separated 'dragged piece'.
-                    sprites = init_sprites(game);
-                    // print_game(game);
-                    if(next_valid_moves(game).size() == 0)
-                    {
-                        if(is_king_checked(game))
-                            printf("CHECKMATE!!\n");
-                        else
-                            printf("STALEMATE!!\n");
-                    }
+
+                    dragged_piece = -1;
                 }
             }
             break;
@@ -487,23 +416,39 @@ void paint_chess_board()
     }
 }
 
-void paint_sprites(const vector<struct sprite>& sprites)
+void paint_sprites(const struct game& game)
 {
-    // printf("sprites.size()=%lu.\n", sprites.size());
-    for(auto sprite : sprites)
+    for(size_t i = 0; i < game.pieces.size(); i++)
     {
-        if(sprite.is_dragged)
+        struct piece piece = game.pieces[i];
+
+        if(piece.is_captured)
             continue;
 
-        SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
+        if(i == dragged_piece)
+            continue;
+
+        SDL_Texture *texture = deduct_texture(piece);
+        SDL_Rect rect = square2rect(piece.square);
+        SDL_RenderCopy(ren, texture, nullptr, &rect);
     }
 
-    for(auto sprite : sprites)
+    for(size_t i = 0; i < game.pieces.size(); i++)
     {
-        if(!sprite.is_dragged)
+        struct piece piece = game.pieces[i];
+
+        if(i != dragged_piece)
             continue;
 
-        SDL_RenderCopy(ren, sprite.tex, nullptr, &sprite.rect);
+        assert(!piece.is_captured);
+
+        SDL_Texture *texture = deduct_texture(piece);
+        SDL_Rect rect;
+        rect.x = mouse.x - square_width / 2;
+        rect.y = mouse.y - square_heigh / 2;
+        rect.w = square_width;
+        rect.h = square_heigh;
+        SDL_RenderCopy(ren, texture, nullptr, &rect);
     }
 }
 
@@ -514,11 +459,10 @@ void initWindowIcon()
         cerr << "IMG_Load() error : " << IMG_GetError() << endl;
         exit_failure();
     }
-    // printf("Set Window icon.\n");
     SDL_SetWindowIcon(display, icon);
 }
 
-void paint_screen(vector<struct sprite> sprites)
+void paint_screen(const struct game& game)
 {
     assert(display);
 
@@ -526,7 +470,7 @@ void paint_screen(vector<struct sprite> sprites)
     SDL_RenderClear(ren);
 
     paint_chess_board();
-    paint_sprites(sprites);
+    paint_sprites(game);
 
     SDL_RenderPresent(ren);
     SDL_UpdateWindowSurface(display);
@@ -630,17 +574,12 @@ int main()
     struct game game;
     game.pieces = initial_board;
 
-    vector<struct sprite> sprites = init_sprites(game);
-
     while(!quit)
     {
-        assertInvariants(sprites, game);
-        process_input_events(sprites, game);
-        assertInvariants(sprites, game);
+        process_input_events(game);
 
-        assertInvariants(sprites, game);
-        paint_screen(sprites);
-        assertInvariants(sprites, game);
+
+        paint_screen(game);
     }
     printf("bye!\n");
 
