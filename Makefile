@@ -34,7 +34,7 @@ clean:
 	rm chessboard *.o
 
 utils.o: utils.hpp utils.cpp
-game.o: game.hpp game.cpp
+game.o: game.hpp game.cpp net_protocol.hpp
 net_protocol.o: net_protocol.hpp
 
 chessboard: utils.o game.o net_protocol.o

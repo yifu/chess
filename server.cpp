@@ -28,7 +28,7 @@ void process_login(int fd, struct login *login)
     // TODO POLLOUT or not POLLOUT?
     struct login_ack login_ack;
     login_ack.msg_type = msg_type::login_ack;
-    login_ack.player_color = player_color::white;
+    login_ack.player_color = color::white;
     int n = send(fd, &login_ack, sizeof(login_ack), 0);
     if(n == -1)
     {

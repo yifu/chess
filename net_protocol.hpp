@@ -1,17 +1,12 @@
 #pragma once
 
 #include <stdint.h>
+#include "game.hpp"
 
 enum class msg_type : uint8_t
 {
     login = 0x01,
     login_ack = 0x02,
-};
-
-enum class player_color : uint8_t
-{
-    white = 0x01,
-    black = 0x02,
 };
 
 #pragma pack(push,1)
@@ -26,7 +21,7 @@ struct login
 struct login_ack
 {
     enum msg_type msg_type;
-    enum player_color player_color;
+    enum color player_color;
 };
 
 #pragma pack(pop)

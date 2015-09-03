@@ -42,6 +42,8 @@ int square_width, square_heigh;
 
 SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square_heigh };
 
+enum color player_color;
+
 bool operator != (SDL_Rect l, SDL_Rect r)
 {
     return l.x != r.x || l.y != r.y || l.w != r.w || l.h != r.h;
@@ -588,6 +590,7 @@ void init_network()
     }
     printf("login_ack={player_color=%d}\n", login_ack.player_color);
     fflush(stdout);
+    player_color = login_ack.player_color;
 }
 
 int main()
