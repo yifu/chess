@@ -628,12 +628,17 @@ void network_thread()
             {
                 if(pollfd.fd == pipefd[0])
                 {
+                    printf("network thread: read pipe read end.\n");
                     char buf[1024];
                     int n = read(pipefd[0], buf, sizeof(buf));
                     if(n == -1)
                     {
                         perror("read()");
                         exit_failure();
+                    }
+                    if(n == 0)
+                    {
+                        close(pipefd[0]);
                     }
                     n = send(fd, buf, n, 0);
                     if(n == -1)
@@ -644,6 +649,7 @@ void network_thread()
                 }
                 else if(pollfd.fd == fd)
                 {
+                    printf("network thread: read socket.\n");
                     char buf[1024];
                     int n = recv(fd, buf, sizeof(buf), 0);
                     if(n < 0)
@@ -657,6 +663,12 @@ void network_thread()
                     }
                     else
                     {
+                        if(n == 0)
+                        {
+                            printf("network thread: socket closed.\n");
+                            close(fd);
+                            exit_failure();
+                        }
                         char *data = (char*)malloc(n);
                         int *len = (int*)malloc(sizeof(int));
                         if(data == nullptr || len == nullptr)
@@ -708,6 +720,7 @@ int main()
     }
     printf("bye!\n");
 
+    close(pipefd[1]);
     t.join();
     clean_up();
 }
