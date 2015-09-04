@@ -345,15 +345,9 @@ void process_input_events(struct game& game)
         }
         case SDL_MOUSEBUTTONUP:
         {
-            bool found = false;
-            // TODO Remove the for loop. Use the dragged_piece pos directly.
-            for(size_t i = 0; i < game.pieces.size(); i++)
+            if(dragged_piece != (size_t)-1)
             {
-                if(i == dragged_piece)
-                {
-                    assert(!found);
-                    found = true;
-                    struct piece& piece = game.pieces[i];
+                    struct piece& piece = game.pieces[dragged_piece];
                     struct square src = piece.square;
                     struct square dst = detect_square(e.button.x, e.button.y);
                     struct move candidate_move = {src, dst};
@@ -381,7 +375,6 @@ void process_input_events(struct game& game)
                     // need to define a separated 'dragged piece'.
 
                     dragged_piece = -1;
-                }
             }
             break;
         }
