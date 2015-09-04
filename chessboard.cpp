@@ -417,6 +417,7 @@ void process_input_events(struct game& game)
                 free(e.user.data1);
                 free(e.user.data2);
             }
+            printf("e.type=%X.\n", e.type);
             break;
         }
     }
@@ -550,6 +551,8 @@ void init_sdl()
         printf("SDL_RegisterEvents() error : %s.\n", SDL_GetError());
         exit_failure();
     }
+
+    SDL_EventState(SDL_WINDOWEVENT, SDL_IGNORE);
 }
 
 int init_network()
