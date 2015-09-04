@@ -21,7 +21,7 @@ using namespace std;
 
 #define arraysize(array)    (sizeof(array)/sizeof(array[0]))
 
-bool quit = false;
+bool quit = false, network_thread_quit = false;
 int exit_result = EXIT_SUCCESS;
 
 SDL_Window *display = nullptr;
@@ -558,7 +558,7 @@ int init_network()
     if(fd == -1)
     {
         perror("socket()");
-        exit_failure();
+        network_thread_quit = true;
     }
 
     int optval = 1;
@@ -567,7 +567,7 @@ int init_network()
     if(res == -1)
     {
         perror("setsockopt(TCP_NODELAY)");
-        exit(EXIT_FAILURE);
+        network_thread_quit = true;
     }
 
     struct sockaddr_in addr;
@@ -581,7 +581,7 @@ int init_network()
     if(res == -1)
     {
         perror("connect()");
-        exit_failure();
+        network_thread_quit = true;
     }
 
     struct login login;
@@ -591,7 +591,7 @@ int init_network()
     if(res == -1)
     {
         perror("send()");
-        exit_failure();
+        network_thread_quit = true;
     }
 
     struct login_ack login_ack;
@@ -599,7 +599,7 @@ int init_network()
     if(n == -1)
     {
         perror("recv()");
-        exit_failure();
+        network_thread_quit = true;
     }
     printf("login_ack={player_color=%d}\n", login_ack.player_color);
     fflush(stdout);
@@ -611,14 +611,14 @@ int init_network()
 void network_thread()
 {
     int fd = init_network();
-    while(!quit)
+    while(!network_thread_quit)
     {
         struct pollfd fds[2] = {{pipefd[0], POLLIN, 0},{fd, POLLIN, 0}};
         int nfds = poll(&fds[0], arraysize(fds), -1/*timeout*/);
         if(nfds == -1)
         {
             perror("poll()");
-            exit(EXIT_FAILURE);
+            network_thread_quit = true;
         }
 
         for(size_t i = 0; i < arraysize(fds); i++)
@@ -634,17 +634,18 @@ void network_thread()
                     if(n == -1)
                     {
                         perror("read()");
-                        exit_failure();
+                        network_thread_quit = true;
                     }
                     if(n == 0)
                     {
                         close(pipefd[0]);
+                        network_thread_quit = true;
                     }
                     n = send(fd, buf, n, 0);
                     if(n == -1)
                     {
                         perror("send()");
-                        exit_failure();
+                        network_thread_quit = true;
                     }
                 }
                 else if(pollfd.fd == fd)
@@ -656,9 +657,8 @@ void network_thread()
                     {
                         if(errno != EAGAIN && errno != EWOULDBLOCK)
                         {
-                            printf("recv");
                             perror("recv()");
-                            exit_failure();
+                            network_thread_quit = true;
                         }
                     }
                     else
@@ -667,33 +667,37 @@ void network_thread()
                         {
                             printf("network thread: socket closed.\n");
                             close(fd);
-                            exit_failure();
-                        }
-                        char *data = (char*)malloc(n);
-                        int *len = (int*)malloc(sizeof(int));
-                        if(data == nullptr || len == nullptr)
-                        {
-                            perror("malloc()");
-                            exit_failure();
+                            network_thread_quit = true;
                         }
                         else
                         {
-                            memcpy(data, buf, n);
-                            *len = n;
-                            SDL_Event event;
-                            memset(&event, 0, sizeof(event));
-                            event.type = custom_event_type;
-                            event.user.code = NETWORK_CODE;
-                            event.user.data1 = data;
-                            event.user.data2 = len;
-                            SDL_PushEvent(&event);
+                            char *data = (char*)malloc(n);
+                            int *len = (int*)malloc(sizeof(int));
+                            if(data == nullptr || len == nullptr)
+                            {
+                                perror("malloc()");
+                                network_thread_quit = true;
+                            }
+                            else
+                            {
+                                memcpy(data, buf, n);
+                                *len = n;
+                                SDL_Event event;
+                                memset(&event, 0, sizeof(event));
+                                event.type = custom_event_type;
+                                event.user.code = NETWORK_CODE;
+                                event.user.data1 = data;
+                                event.user.data2 = len;
+                                SDL_PushEvent(&event);
+                            }
                         }
                     }
                 }
             }
         }
-
     }
+    // TODO We must try to re-connect to the server.
+    printf("network thread: bye!\n");
 }
 
 int main()
