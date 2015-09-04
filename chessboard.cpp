@@ -370,10 +370,6 @@ void process_input_events(struct game& game)
                             printf("STALEMATE!!\n");
                     }
                 }
-                // TODO Better to call that from the top of the
-                // event loop. In the paint_sprites() call. We may
-                // need to define a separated 'dragged piece'.
-
                 dragged_piece = -1;
             }
             break;
