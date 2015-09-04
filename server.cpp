@@ -190,7 +190,6 @@ int main()
     while(true)
     {
         int nfds = poll(&fds[0], sz, -1/*timeout*/);
-
         if(nfds == -1)
         {
             perror("poll()");

@@ -8,6 +8,7 @@
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <thread>
+#include <poll.h>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -17,6 +18,8 @@
 #include "net_protocol.hpp"
 
 using namespace std;
+
+#define arraysize(array)    (sizeof(array)/sizeof(array[0]))
 
 bool quit = false;
 int exit_result = EXIT_SUCCESS;
@@ -28,6 +31,7 @@ SDL_Surface *icon = nullptr;
 
 constexpr Sint32 NETWORK_CODE = 1;
 Uint32 custom_event_type;
+int pipefd[2] = {-1,-1};
 
 SDL_Texture *white_pawn_texture = nullptr;
 SDL_Texture *white_rook_texture = nullptr;
@@ -47,7 +51,6 @@ int square_width, square_heigh;
 
 SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square_heigh };
 
-int fd = -1;
 enum color player_color;
 
 size_t dragged_piece = -1;
@@ -285,17 +288,17 @@ struct sprite init_sprite(struct piece piece)
 
 void send_move(struct move move)
 {
-    assert(fd != -1);
+    assert(pipefd[1] != -1);
     struct move_msg move_msg;
     move_msg.msg_type = msg_type::move_msg;
     move_msg.src_row = move.src.row;
     move_msg.src_col = move.src.col;
     move_msg.dst_row = move.dst.row;
     move_msg.dst_col = move.dst.col;
-    int n = send(fd, &move_msg, sizeof(move_msg), 0);
+    int n = write(pipefd[1], &move_msg, sizeof(move_msg));
     if(n == -1)
     {
-        perror("send()");
+        perror("write()");
         exit_failure();
     }
 }
@@ -396,7 +399,8 @@ void process_input_events(struct game& game)
                 }
                 char *buf = (char*)e.user.data1;
                 enum msg_type type = (enum msg_type)buf[0];
-                printf("msg type=%d.\n", type);
+                printf("msg type=%d, len=%d.\n",
+                       type, *(int*)e.user.data2);
                 if(type != msg_type::move_msg)
                 {
                     printf("error!\n");
@@ -411,6 +415,7 @@ void process_input_events(struct game& game)
                 move.dst.col = msg.dst_col;
                 game = apply_move(game, move);
                 free(e.user.data1);
+                free(e.user.data2);
             }
             break;
         }
@@ -547,9 +552,9 @@ void init_sdl()
     }
 }
 
-void init_network()
+int init_network()
 {
-    fd = socket(AF_INET, SOCK_STREAM, 0);
+    int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd == -1)
     {
         perror("socket()");
@@ -599,50 +604,97 @@ void init_network()
     printf("login_ack={player_color=%d}\n", login_ack.player_color);
     fflush(stdout);
     player_color = login_ack.player_color;
+
+    return fd;
 }
 
 void network_thread()
 {
-    init_network();
+    int fd = init_network();
     while(!quit)
     {
-        char buf[1024];
-        int n = recv(fd, buf, sizeof(buf), 0);
-        if(n < 0)
+        struct pollfd fds[2] = {{pipefd[0], POLLIN, 0},{fd, POLLIN, 0}};
+        int nfds = poll(&fds[0], arraysize(fds), -1/*timeout*/);
+        if(nfds == -1)
         {
-            if(errno != EAGAIN && errno != EWOULDBLOCK)
+            perror("poll()");
+            exit(EXIT_FAILURE);
+        }
+
+        for(size_t i = 0; i < arraysize(fds); i++)
+        {
+            struct pollfd pollfd = fds[i];
+            if(pollfd.revents == POLLIN)
             {
-                printf("recv");
-                perror("recv()");
-                exit_failure();
+                if(pollfd.fd == pipefd[0])
+                {
+                    char buf[1024];
+                    int n = read(pipefd[0], buf, sizeof(buf));
+                    if(n == -1)
+                    {
+                        perror("read()");
+                        exit_failure();
+                    }
+                    n = send(fd, buf, n, 0);
+                    if(n == -1)
+                    {
+                        perror("send()");
+                        exit_failure();
+                    }
+                }
+                else if(pollfd.fd == fd)
+                {
+                    char buf[1024];
+                    int n = recv(fd, buf, sizeof(buf), 0);
+                    if(n < 0)
+                    {
+                        if(errno != EAGAIN && errno != EWOULDBLOCK)
+                        {
+                            printf("recv");
+                            perror("recv()");
+                            exit_failure();
+                        }
+                    }
+                    else
+                    {
+                        char *data = (char*)malloc(n);
+                        int *len = (int*)malloc(sizeof(int));
+                        if(data == nullptr || len == nullptr)
+                        {
+                            perror("malloc()");
+                            exit_failure();
+                        }
+                        else
+                        {
+                            memcpy(data, buf, n);
+                            *len = n;
+                            SDL_Event event;
+                            memset(&event, 0, sizeof(event));
+                            event.type = custom_event_type;
+                            event.user.code = NETWORK_CODE;
+                            event.user.data1 = data;
+                            event.user.data2 = len;
+                            SDL_PushEvent(&event);
+                        }
+                    }
+                }
             }
         }
-        else
-        {
-            char *data = (char*)malloc(n);
-            if(data == nullptr)
-            {
-                perror("malloc()");
-                exit_failure();
-            }
-            else
-            {
-                memcpy(data, buf, n);
-                SDL_Event event;
-                memset(&event, 0, sizeof(event));
-                event.type = custom_event_type;
-                event.user.code = NETWORK_CODE;
-                event.user.data1 = data;
-                event.user.data2 = n;
-                SDL_PushEvent(&event);
-            }
-        }
+
     }
 }
 
 int main()
 {
     init_sdl();
+
+    int res = pipe(pipefd);
+    if(res == -1)
+    {
+        perror("pipe()");
+        exit_failure();
+    }
+
     thread t(network_thread);
 
     struct game game;
