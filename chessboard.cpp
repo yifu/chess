@@ -347,34 +347,34 @@ void process_input_events(struct game& game)
         {
             if(dragged_piece != (size_t)-1)
             {
-                    struct piece& piece = game.pieces[dragged_piece];
-                    struct square src = piece.square;
-                    struct square dst = detect_square(e.button.x, e.button.y);
-                    struct move candidate_move = {src, dst};
+                struct piece& piece = game.pieces[dragged_piece];
+                struct square src = piece.square;
+                struct square dst = detect_square(e.button.x, e.button.y);
+                struct move candidate_move = {src, dst};
 
-                    // TODO Refactor the following. Must be moved into game.cpp file?
+                // TODO Refactor the following. Must be moved into game.cpp file?
 
-                    vector<struct move> valid_moves = next_valid_moves(game);
-                    auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
-                    if(found != valid_moves.end())
+                vector<struct move> valid_moves = next_valid_moves(game);
+                auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
+                if(found != valid_moves.end())
+                {
+                    // TODO We may overwrite with the candidate_game above.
+                    game = apply_move(game, candidate_move);
+                    send_move(candidate_move);
+
+                    if(next_valid_moves(game).size() == 0)
                     {
-                        // TODO We may overwrite with the candidate_game above.
-                        game = apply_move(game, candidate_move);
-                        send_move(candidate_move);
-
-                        if(next_valid_moves(game).size() == 0)
-                        {
-                            if(is_king_checked(game))
-                                printf("CHECKMATE!!\n");
-                            else
-                                printf("STALEMATE!!\n");
-                        }
+                        if(is_king_checked(game))
+                            printf("CHECKMATE!!\n");
+                        else
+                            printf("STALEMATE!!\n");
                     }
-                    // TODO Better to call that from the top of the
-                    // event loop. In the paint_sprites() call. We may
-                    // need to define a separated 'dragged piece'.
+                }
+                // TODO Better to call that from the top of the
+                // event loop. In the paint_sprites() call. We may
+                // need to define a separated 'dragged piece'.
 
-                    dragged_piece = -1;
+                dragged_piece = -1;
             }
             break;
         }
