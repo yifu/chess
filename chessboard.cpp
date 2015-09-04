@@ -336,11 +336,17 @@ void process_input_events(struct game& game)
                 }
             }
             printf("found = %d.\n", found);
+            if(found)
+            {
+                printf("dragged_piece pos = %lu.\n", dragged_piece);
+                print_piece(game.pieces[dragged_piece]);
+            }
             break;
         }
         case SDL_MOUSEBUTTONUP:
         {
             bool found = false;
+            // TODO Remove the for loop. Use the dragged_piece pos directly.
             for(size_t i = 0; i < game.pieces.size(); i++)
             {
                 if(i == dragged_piece)
