@@ -435,12 +435,9 @@ void paint_sprites(const struct game& game)
         SDL_RenderCopy(ren, texture, nullptr, &rect);
     }
 
-    for(size_t i = 0; i < game.pieces.size(); i++)
+    if(dragged_piece != (size_t)-1)
     {
-        struct piece piece = game.pieces[i];
-
-        if(i != dragged_piece)
-            continue;
+        struct piece piece = game.pieces[dragged_piece];
 
         assert(!piece.is_captured);
 
