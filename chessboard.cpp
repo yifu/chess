@@ -327,7 +327,9 @@ void process_input_events(struct game& game)
                 SDL_Rect rect = square2rect(game.pieces[i].square);
                 if(is_hitting_rect(rect, e.button.x, e.button.y))
                 {
-                    if(game.pieces[i].color != game.cur_player)
+                    if(game.pieces[i].color != player_color)
+                        continue;
+                    if(game.cur_player == opponent(player_color))
                         continue;
                     if(game.pieces[i].is_captured)
                         continue;
