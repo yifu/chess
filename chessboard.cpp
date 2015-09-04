@@ -607,7 +607,7 @@ void network_thread()
     while(!quit)
     {
         char buf[1024];
-        int n = recv(fd, buf, sizeof(buf), MSG_DONTWAIT);
+        int n = recv(fd, buf, sizeof(buf), 0);
         if(n < 0)
         {
             if(errno != EAGAIN && errno != EWOULDBLOCK)
