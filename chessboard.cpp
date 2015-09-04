@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <thread>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -18,11 +19,15 @@
 using namespace std;
 
 bool quit = false;
+int exit_result = EXIT_SUCCESS;
 
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
 
 SDL_Surface *icon = nullptr;
+
+constexpr Sint32 NETWORK_CODE = 1;
+Uint32 custom_event_type;
 
 SDL_Texture *white_pawn_texture = nullptr;
 SDL_Texture *white_rook_texture = nullptr;
@@ -189,18 +194,21 @@ void clean_up()
     if(display)
         SDL_DestroyWindow(display);
     SDL_Quit();
+    IMG_Quit();
 }
 
 void exit_success()
 {
     clean_up();
-    exit(EXIT_SUCCESS);
+    quit = true;
+    exit_result = EXIT_SUCCESS;
 }
 
 void exit_failure()
 {
     clean_up();
-    exit(EXIT_FAILURE);
+    quit = true;
+    exit_result = EXIT_FAILURE;
 }
 
 SDL_Texture *init_texture(string filename)
@@ -379,10 +387,35 @@ void process_input_events(struct game& game)
         default:
         {
             // printf("e.type=%d\n", e.type);
+            if(e.type == custom_event_type)
+            {
+                if(e.user.code != NETWORK_CODE)
+                {
+                    assert(false);
+                    break;
+                }
+                char *buf = (char*)e.user.data1;
+                enum msg_type type = (enum msg_type)buf[0];
+                printf("msg type=%d.\n", type);
+                if(type != msg_type::move_msg)
+                {
+                    printf("error!\n");
+                    free(e.user.data1);
+                    break;
+                }
+                struct move_msg msg = (*(struct move_msg*)buf);
+                struct move move;
+                move.src.row = msg.src_row;
+                move.src.col = msg.src_col;
+                move.dst.row = msg.dst_row;
+                move.dst.col = msg.dst_col;
+                game = apply_move(game, move);
+                free(e.user.data1);
+            }
             break;
         }
-        }
     }
+}
 }
 
 void paint_chess_board()
@@ -506,6 +539,12 @@ void init_sdl()
     SDL_ShowWindow(display);
 
     init_textures();
+    custom_event_type = SDL_RegisterEvents(1);
+    if(custom_event_type == (Uint32)-1)
+    {
+        printf("SDL_RegisterEvents() error : %s.\n", SDL_GetError());
+        exit_failure();
+    }
 }
 
 void init_network()
@@ -562,18 +601,11 @@ void init_network()
     player_color = login_ack.player_color;
 }
 
-int main()
+void network_thread()
 {
-    init_sdl();
     init_network();
-
-    struct game game;
-    game.pieces = initial_board;
-
     while(!quit)
     {
-        process_input_events(game);
-
         char buf[1024];
         int n = recv(fd, buf, sizeof(buf), MSG_DONTWAIT);
         if(n < 0)
@@ -587,25 +619,42 @@ int main()
         }
         else
         {
-            enum msg_type type = (enum msg_type)buf[0];
-            printf("msg type=%d.\n", type);
-            if(type != msg_type::move_msg)
+            char *data = (char*)malloc(n);
+            if(data == nullptr)
             {
-                printf("error!\n");
-                continue;
+                perror("malloc()");
+                exit_failure();
             }
-            struct move_msg msg = (*(struct move_msg*)buf);
-            struct move move;
-            move.src.row = msg.src_row;
-            move.src.col = msg.src_col;
-            move.dst.row = msg.dst_row;
-            move.dst.col = msg.dst_col;
-            game = apply_move(game, move);
+            else
+            {
+                memcpy(data, buf, n);
+                SDL_Event event;
+                memset(&event, 0, sizeof(event));
+                event.type = custom_event_type;
+                event.user.code = NETWORK_CODE;
+                event.user.data1 = data;
+                SDL_PushEvent(&event);
+            }
         }
+    }
+}
+
+int main()
+{
+    init_sdl();
+    thread t(network_thread);
+
+    struct game game;
+    game.pieces = initial_board;
+
+    while(!quit)
+    {
+        process_input_events(game);
 
         paint_screen(game);
     }
     printf("bye!\n");
 
-    exit_success();
+    t.join();
+    clean_up();
 }
