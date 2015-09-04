@@ -633,6 +633,7 @@ void network_thread()
                 event.type = custom_event_type;
                 event.user.code = NETWORK_CODE;
                 event.user.data1 = data;
+                event.user.data2 = n;
                 SDL_PushEvent(&event);
             }
         }
