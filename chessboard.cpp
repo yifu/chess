@@ -328,7 +328,9 @@ void process_input_events(struct game& game)
                 if(is_hitting_rect(rect, e.button.x, e.button.y))
                 {
                     if(game.pieces[i].color != game.cur_player)
-                        break;
+                        continue;
+                    if(game.pieces[i].is_captured)
+                        continue;
                     found = true;
                     dragged_piece = i;
                 }
