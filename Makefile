@@ -31,7 +31,7 @@ release: CXXFLAGS += -DNDEBUG -O3
 release: chessboard server
 
 clean:
-	rm chessboard *.o
+	rm server chessboard *.o
 
 utils.o: utils.hpp utils.cpp
 game.o: game.hpp game.cpp net_protocol.hpp
