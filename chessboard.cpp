@@ -744,6 +744,7 @@ int main()
 
     struct game game;
     game.pieces = initial_board;
+    paint_screen(game);
 
     while(!quit)
     {
