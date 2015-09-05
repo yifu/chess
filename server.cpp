@@ -9,17 +9,32 @@
 #include <unistd.h>
 
 #include "net_protocol.hpp"
+#include "game.hpp"
 
 using namespace std;
 
 // TODO Handle SIGFPIPE
 
+#define arraysize(array)    (sizeof(array)/sizeof(array[0]))
+
 int listen_fd = -1;
 
+// ulimit -n
+// sysctl -w fs.file-max=100000
+// cat /proc/sys/fs/file-nr
+// getrlimit/setrlimit RLIMIT_NOFILE
 struct pollfd fds[100]; // TODO MAX FD PER PROCESSUS?
 size_t sz = 0;
 
 enum color last_color = color::black;
+
+struct srv_game
+{
+    struct game game;
+    int white_fd = -1, black_fd = -1;
+};
+
+struct srv_game current_game;
 
 void process_login(int fd, struct login *login)
 {
@@ -40,6 +55,17 @@ void process_login(int fd, struct login *login)
     {
         login_ack.player_color = color::white;
         last_color = color::white;
+    }
+
+    if(login_ack.player_color == color::white)
+    {
+        struct srv_game srv_game;
+        srv_game.white_fd = fd;
+        current_game = srv_game;
+    }
+    else
+    {
+        current_game.black_fd = fd;
     }
 
     int n = send(fd, &login_ack, sizeof(login_ack), 0);
