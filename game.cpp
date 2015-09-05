@@ -458,24 +458,25 @@ vector<struct move> generate_knight_moves(struct game game, size_t pos)
 
 struct game apply_move(struct game game, struct move move)
 {
-    size_t src_pos, dst_pos;
-
     game.moves.push_back(move);
     game.cur_player = opponent(game.cur_player);
 
-    dst_pos = find_piece_pos(game, move.dst);
-    if(dst_pos == (size_t)-1)
-        goto init_src;
+    size_t src_pos = find_piece_pos(game, move.src);
+    size_t dst_pos = find_piece_pos(game, move.dst);
 
-    assert(dst_pos < game.pieces.size());
-    game.pieces[dst_pos].is_captured = true;
-
-// TODO Refactor that.
-// dst must be modified before src.
-init_src:
-    src_pos = find_piece_pos(game, move.src);
     assert(src_pos < game.pieces.size());
-    game.pieces[src_pos].square = move.dst;
+//    assert(dst_pos < game.pieces.size());
+
+    struct piece src_piece = game.pieces[src_pos];
+    src_piece.square = move.dst;
+    game.pieces[src_pos] = src_piece;
+
+    if(dst_pos != (size_t)-1)
+    {
+        struct piece dst_piece = game.pieces[dst_pos];
+        dst_piece.is_captured = true;
+        game.pieces[dst_pos] = dst_piece;
+    }
 
     return game;
 }
