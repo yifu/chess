@@ -19,8 +19,6 @@
 
 using namespace std;
 
-#define arraysize(array)    (sizeof(array)/sizeof(array[0]))
-
 bool quit = false, network_thread_quit = false;
 int exit_result = EXIT_SUCCESS;
 
