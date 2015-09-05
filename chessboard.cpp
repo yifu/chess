@@ -19,6 +19,9 @@
 
 using namespace std;
 
+bool check_for_valid_moves = false;
+struct game last_game;
+
 bool quit = false, network_thread_quit = false;
 int exit_result = EXIT_SUCCESS;
 
@@ -370,20 +373,29 @@ void process_input_events(struct game& game)
 
                 // TODO Refactor the following. Must be moved into game.cpp file?
 
-                vector<struct move> valid_moves = next_valid_moves(game);
-                auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
-                if(found != valid_moves.end())
+                if(check_for_valid_moves)
                 {
+                    vector<struct move> valid_moves = next_valid_moves(game);
+                    auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
+                    if(found != valid_moves.end())
+                    {
+                        game = apply_move(game, candidate_move);
+                        send_move(candidate_move);
+
+                        if(next_valid_moves(game).size() == 0)
+                        {
+                            if(is_king_checked(game))
+                                printf("CHECKMATE!!\n");
+                            else
+                                printf("STALEMATE!!\n");
+                        }
+                    }
+                }
+                else
+                {
+                    last_game = game;
                     game = apply_move(game, candidate_move);
                     send_move(candidate_move);
-
-                    if(next_valid_moves(game).size() == 0)
-                    {
-                        if(is_king_checked(game))
-                            printf("CHECKMATE!!\n");
-                        else
-                            printf("STALEMATE!!\n");
-                    }
                 }
                 dragged_piece = -1;
                 mouse_x = e.button.x;
@@ -406,25 +418,31 @@ void process_input_events(struct game& game)
                 enum msg_type type = (enum msg_type)buf[0];
                 printf("msg type=%d, len=%d.\n",
                        type, *(int*)e.user.data2);
-                if(type != msg_type::move_msg)
+                if(type == msg_type::move_msg)
                 {
-                    printf("error!\n");
-                    free(e.user.data1);
-                    break;
+                    struct move_msg msg = (*(struct move_msg*)buf);
+                    struct move move;
+                    move.src.row = msg.src_row;
+                    move.src.col = msg.src_col;
+                    move.dst.row = msg.dst_row;
+                    move.dst.col = msg.dst_col;
+                    game = apply_move(game, move);
+                    if(next_valid_moves(game).size() == 0)
+                    {
+                        if(is_king_checked(game))
+                            printf("CHECKMATE!!\n");
+                        else
+                            printf("STALEMATE!!\n");
+                    }
                 }
-                struct move_msg msg = (*(struct move_msg*)buf);
-                struct move move;
-                move.src.row = msg.src_row;
-                move.src.col = msg.src_col;
-                move.dst.row = msg.dst_row;
-                move.dst.col = msg.dst_col;
-                game = apply_move(game, move);
-                if(next_valid_moves(game).size() == 0)
+                else if(type == msg_type::reject_move_msg)
                 {
-                    if(is_king_checked(game))
-                        printf("CHECKMATE!!\n");
-                    else
-                        printf("STALEMATE!!\n");
+                    printf("rejected msg.\n");
+                    game = last_game;
+                }
+                else
+                {
+                    assert(false);
                 }
                 free(e.user.data1);
                 free(e.user.data2);
