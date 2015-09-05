@@ -374,7 +374,6 @@ void process_input_events(struct game& game)
                 auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
                 if(found != valid_moves.end())
                 {
-                    // TODO We may overwrite with the candidate_game above.
                     game = apply_move(game, candidate_move);
                     send_move(candidate_move);
 
