@@ -27,6 +27,8 @@ int listen_fd = -1;
 struct pollfd fds[100]; // TODO MAX FD PER PROCESSUS?
 size_t sz = 0;
 
+vector<int/*fd*/> waiting_list;
+
 enum color last_color = color::black;
 
 struct srv_game
@@ -36,6 +38,42 @@ struct srv_game
 };
 
 struct srv_game current_game;
+
+void match_players()
+{
+    while(waiting_list.size() > 1)
+    {
+        int white_fd = waiting_list[0];
+        int black_fd = waiting_list[1];
+
+        struct srv_game new_game;
+        new_game.game.pieces = initial_board;
+        new_game.white_fd = white_fd;
+        new_game.black_fd = black_fd;
+        current_game = new_game;
+
+        struct new_game_msg new_game_msg;
+        new_game_msg.msg_type = msg_type::new_game_msg;
+        new_game_msg.player_color = color::white;
+
+        ssize_t n = send(white_fd, &new_game_msg, sizeof(new_game_msg),0);
+        if(n == -1)
+        {
+            perror("send()");
+            exit(EXIT_FAILURE);
+        }
+
+        new_game_msg.player_color = color::black;
+        n = send(black_fd, &new_game_msg, sizeof(new_game_msg),0);
+        if(n == -1)
+        {
+            perror("send()");
+            exit(EXIT_FAILURE);
+        }
+
+        waiting_list.erase(waiting_list.begin(), waiting_list.begin()+2);
+    }
+}
 
 void process_login(int fd, struct login *login)
 {
@@ -47,28 +85,30 @@ void process_login(int fd, struct login *login)
     struct login_ack login_ack;
     login_ack.msg_type = msg_type::login_ack;
 
-    if(last_color == color::white)
-    {
-        login_ack.player_color = color::black;
-        last_color = color::black;
-    }
-    else
-    {
-        login_ack.player_color = color::white;
-        last_color = color::white;
-    }
+    waiting_list.push_back(fd);
 
-    if(login_ack.player_color == color::white)
-    {
-        struct srv_game srv_game;
-        srv_game.game.pieces = initial_board;
-        srv_game.white_fd = fd;
-        current_game = srv_game;
-    }
-    else
-    {
-        current_game.black_fd = fd;
-    }
+    // if(last_color == color::white)
+    // {
+    //     login_ack.player_color = color::black;
+    //     last_color = color::black;
+    // }
+    // else
+    // {
+    //     login_ack.player_color = color::white;
+    //     last_color = color::white;
+    // }
+
+    // if(login_ack.player_color == color::white)
+    // {
+    //     struct srv_game srv_game;
+    //     srv_game.game.pieces = initial_board;
+    //     srv_game.white_fd = fd;
+    //     current_game = srv_game;
+    // }
+    // else
+    // {
+    //     current_game.black_fd = fd;
+    // }
 
     int n = send(fd, &login_ack, sizeof(login_ack), 0);
     if(n == -1)
@@ -282,6 +322,8 @@ int main()
                 nfds--;
             }
         }
+
+        match_players();
 
         // remove(fds, fds+sz, fd);
         // sz--;

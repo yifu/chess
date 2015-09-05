@@ -440,6 +440,16 @@ void process_input_events(struct game& game)
                     printf("rejected msg.\n");
                     game = last_game;
                 }
+                else if(type == msg_type::new_game_msg)
+                {
+                    struct new_game_msg msg = (*(struct new_game_msg*)buf);
+                    printf("new_game_msg={player_color=%d}\n", msg.player_color);
+                    fflush(stdout);
+                    struct game new_game;
+                    game = new_game;
+                    game.pieces = initial_board;
+                    player_color = msg.player_color;
+                }
                 else
                 {
                     assert(false);
@@ -638,9 +648,6 @@ int init_network()
         perror("recv()");
         network_thread_quit = true;
     }
-    printf("login_ack={player_color=%d}\n", login_ack.player_color);
-    fflush(stdout);
-    player_color = login_ack.player_color;
 
     return fd;
 }
