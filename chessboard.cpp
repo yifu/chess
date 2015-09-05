@@ -19,7 +19,7 @@
 
 using namespace std;
 
-bool check_for_valid_moves = false;
+bool check_for_valid_moves = true;
 struct game last_game;
 
 bool quit = false, network_thread_quit = false;
