@@ -23,7 +23,7 @@ using namespace std;
 bool check_for_valid_moves = true;
 struct game last_game;
 
-bool quit = false, network_thread_quit = false;
+bool quit = false;
 int exit_result = EXIT_SUCCESS;
 
 SDL_Window *display = nullptr;
@@ -33,7 +33,6 @@ SDL_Surface *icon = nullptr;
 
 constexpr Sint32 NETWORK_CODE = 1;
 Uint32 custom_event_type;
-int pipefd[2] = {-1,-1};
 
 SDL_Texture *white_pawn_texture = nullptr;
 SDL_Texture *white_rook_texture = nullptr;
@@ -288,16 +287,16 @@ struct sprite init_sprite(struct piece piece)
     return sprite;
 }
 
-void send_move(struct move move)
+void send_move(struct move move, int fd)
 {
-    assert(pipefd[1] != -1);
+    assert(fd != -1);
     struct move_msg move_msg;
     move_msg.msg_type = msg_type::move_msg;
     move_msg.src_row = move.src.row;
     move_msg.src_col = move.src.col;
     move_msg.dst_row = move.dst.row;
     move_msg.dst_col = move.dst.col;
-    int n = write(pipefd[1], &move_msg, sizeof(move_msg));
+    ssize_t n = write(fd, &move_msg, sizeof(move_msg));
     if(n == -1)
     {
         perror("write()");
@@ -305,129 +304,78 @@ void send_move(struct move move)
     }
 }
 
-void process_input_events(struct game& game)
+void process_input_events(SDL_Event& e, struct game& game, int fd)
 {
-    SDL_Event e;
-
-    if(SDL_WaitEvent(&e))
+    printf("Input Events!\n");
+    switch(e.type)
     {
-        // printf("Input Events!\n");
-        switch(e.type)
+    case SDL_QUIT:
+    {
+        printf("quit\n");
+        quit = true;
+        break;
+    }
+    case SDL_KEYDOWN:
+    {
+        printf("key down %d\n", e.key.keysym.sym);
+        break;
+    }
+    case SDL_MOUSEMOTION:
+    {
+        mouse_x = e.motion.x;
+        mouse_y = e.motion.y;
+        break;
+    }
+    case SDL_MOUSEBUTTONDOWN:
+    {
+        print_mouse_button_event(e);
+        bool found = false;
+        for(size_t i = 0; i < game.pieces.size(); i++)
         {
-        case SDL_QUIT:
-        {
-            printf("quit\n");
-            quit = true;
-            break;
-        }
-        case SDL_KEYDOWN:
-        {
-            printf("key down %d\n", e.key.keysym.sym);
-            if(e.key.keysym.sym == SDLK_ESCAPE)
-                quit = true;
-            break;
-        }
-        case SDL_MOUSEMOTION:
-        {
-            mouse_x = e.motion.x;
-            mouse_y = e.motion.y;
-            break;
-        }
-        case SDL_MOUSEBUTTONDOWN:
-        {
-            print_mouse_button_event(e);
-            bool found = false;
-            for(size_t i = 0; i < game.pieces.size(); i++)
+            SDL_Rect rect = square2rect(game.pieces[i].square);
+            if(is_hitting_rect(rect, e.button.x, e.button.y))
             {
-                SDL_Rect rect = square2rect(game.pieces[i].square);
-                if(is_hitting_rect(rect, e.button.x, e.button.y))
-                {
-                    if(game.pieces[i].color != player_color)
-                        continue;
-                    if(game.cur_player == opponent(player_color))
-                        continue;
-                    if(game.pieces[i].is_captured)
-                        continue;
-                    found = true;
-                    dragged_piece = i;
-                    mouse_x = e.button.x;
-                    mouse_y = e.button.y;
-                    SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
-                }
-            }
-            printf("found = %d.\n", found);
-            if(found)
-            {
-                printf("dragged_piece pos = %lu.\n", dragged_piece);
-                print_piece(game.pieces[dragged_piece]);
-            }
-            break;
-        }
-        case SDL_MOUSEBUTTONUP:
-        {
-            if(dragged_piece != (size_t)-1)
-            {
-                struct piece& piece = game.pieces[dragged_piece];
-                struct square src = piece.square;
-                struct square dst = detect_square(e.button.x, e.button.y);
-                struct move candidate_move = {src, dst};
-
-                // TODO Refactor the following. Must be moved into game.cpp file?
-
-                if(check_for_valid_moves)
-                {
-                    vector<struct move> valid_moves = next_valid_moves(game);
-                    auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
-                    if(found != valid_moves.end())
-                    {
-                        game = apply_move(game, candidate_move);
-                        send_move(candidate_move);
-
-                        if(next_valid_moves(game).size() == 0)
-                        {
-                            if(is_king_checked(game))
-                                printf("CHECKMATE!!\n");
-                            else
-                                printf("STALEMATE!!\n");
-                        }
-                    }
-                }
-                else
-                {
-                    last_game = game;
-                    game = apply_move(game, candidate_move);
-                    send_move(candidate_move);
-                }
-                dragged_piece = -1;
+                if(game.pieces[i].color != player_color)
+                    continue;
+                if(game.cur_player == opponent(player_color))
+                    continue;
+                if(game.pieces[i].is_captured)
+                    continue;
+                found = true;
+                dragged_piece = i;
                 mouse_x = e.button.x;
                 mouse_y = e.button.y;
-                SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
+                SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
             }
-            break;
         }
-        default:
+        printf("found = %d.\n", found);
+        if(found)
         {
-            // printf("e.type=%d\n", e.type);
-            if(e.type == custom_event_type)
+            printf("dragged_piece pos = %lu.\n", dragged_piece);
+            print_piece(game.pieces[dragged_piece]);
+        }
+        break;
+    }
+    case SDL_MOUSEBUTTONUP:
+    {
+        if(dragged_piece != (size_t)-1)
+        {
+            struct piece& piece = game.pieces[dragged_piece];
+            struct square src = piece.square;
+            struct square dst = detect_square(e.button.x, e.button.y);
+            struct move candidate_move = {src, dst};
+
+            // TODO Refactor the following. Must be moved into game.cpp file?
+
+            if(check_for_valid_moves)
             {
-                if(e.user.code != NETWORK_CODE)
+                vector<struct move> valid_moves = next_valid_moves(game);
+                auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
+                if(found != valid_moves.end())
                 {
-                    assert(false);
-                    break;
-                }
-                char *buf = (char*)e.user.data1;
-                enum msg_type type = (enum msg_type)buf[0];
-                printf("msg type=%d, len=%d.\n",
-                       type, *(int*)e.user.data2);
-                if(type == msg_type::move_msg)
-                {
-                    struct move_msg msg = (*(struct move_msg*)buf);
-                    struct move move;
-                    move.src.row = msg.src_row;
-                    move.src.col = msg.src_col;
-                    move.dst.row = msg.dst_row;
-                    move.dst.col = msg.dst_col;
-                    game = apply_move(game, move);
+                    game = apply_move(game, candidate_move);
+                    send_move(candidate_move, fd);
+
                     if(next_valid_moves(game).size() == 0)
                     {
                         if(is_king_checked(game))
@@ -436,36 +384,41 @@ void process_input_events(struct game& game)
                             printf("STALEMATE!!\n");
                     }
                 }
-                else if(type == msg_type::reject_move_msg)
-                {
-                    printf("rejected msg.\n");
-                    game = last_game;
-                }
-                else if(type == msg_type::new_game_msg)
-                {
-                    struct new_game_msg msg = (*(struct new_game_msg*)buf);
-                    printf("new_game_msg={player_color=%d}\n", msg.player_color);
-                    fflush(stdout);
-                    struct game new_game;
-                    game = new_game;
-                    game.pieces = initial_board;
-                    player_color = msg.player_color;
-                }
-                else
-                {
-                    assert(false);
-                }
-                free(e.user.data1);
-                free(e.user.data2);
             }
             else
             {
-                printf("e.type=%X.\n", e.type);
+                last_game = game;
+                game = apply_move(game, candidate_move);
+                send_move(candidate_move, fd);
             }
-            break;
+            dragged_piece = -1;
+            mouse_x = e.button.x;
+            mouse_y = e.button.y;
+            SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
         }
+        break;
     }
-}
+    default:
+    {
+        printf("e.type=%d\n", e.type);
+//         if(e.type == custom_event_type)
+//         {
+// remove all that             if(e.user.code != NETWORK_CODE)
+//             {
+//                 assert(false);
+//                 break;
+//             }
+//             char *buf = (char*)e.user.data1;
+//             free(e.user.data1);
+//             free(e.user.data2);
+//         }
+//         else
+//         {
+//             printf("e.type=%X.\n", e.type);
+//         }
+        break;
+    }
+    }
 }
 
 void paint_chess_board()
@@ -551,6 +504,7 @@ void paint_screen(const struct game& game)
     paint_chess_board();
     paint_sprites(game);
 
+    printf("SDL_RenderPresent.\n");
     SDL_RenderPresent(ren);
     SDL_UpdateWindowSurface(display);
 }
@@ -589,12 +543,13 @@ void init_sdl()
     SDL_ShowWindow(display);
 
     init_textures();
-    custom_event_type = SDL_RegisterEvents(1);
-    if(custom_event_type == (Uint32)-1)
-    {
-        printf("SDL_RegisterEvents() error : %s.\n", SDL_GetError());
-        exit_failure();
-    }
+
+    // custom_event_type = SDL_RegisterEvents(1);
+    // if(custom_event_type == (Uint32)-1)
+    // {
+    //     printf("SDL_RegisterEvents() error : %s.\n", SDL_GetError());
+    //     exit_failure();
+    // }
 
     SDL_EventState(SDL_WINDOWEVENT, SDL_DISABLE);
     SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
@@ -606,7 +561,7 @@ int init_network(string ip, string port)
     if(fd == -1)
     {
         perror("socket()");
-        network_thread_quit = true;
+        quit = true;
     }
 
     int optval = 1;
@@ -615,7 +570,7 @@ int init_network(string ip, string port)
     if(res == -1)
     {
         perror("setsockopt(TCP_NODELAY)");
-        network_thread_quit = true;
+        quit = true;
     }
 
     struct sockaddr_in addr;
@@ -626,7 +581,7 @@ int init_network(string ip, string port)
     if(res != 1)
     {
         perror("inet_pton()");
-        network_thread_quit = true;
+        quit = true;
     }
 
 
@@ -635,7 +590,7 @@ int init_network(string ip, string port)
     if(res == -1)
     {
         perror("connect()");
-        network_thread_quit = true;
+        quit = true;
     }
 
     struct login login;
@@ -645,15 +600,16 @@ int init_network(string ip, string port)
     if(res == -1)
     {
         perror("send()");
-        network_thread_quit = true;
+        quit = true;
     }
 
+    // TODO Move that recv() call into process_server_fd().
     struct login_ack login_ack;
     int n = recv(fd, &login_ack, sizeof(login_ack), 0);
     if(n == -1)
     {
         perror("recv()");
-        network_thread_quit = true;
+        quit = true;
     }
 
     return fd;
@@ -683,32 +639,36 @@ void print_pollfd(struct pollfd pollfd)
     printf("}\n");
 }
 
-void process_pipe_fd(struct pollfd pollfd, int fd)
+void process_sdl_evt_fd(struct pollfd pollfd, int fd, struct game& game)
 {
-    printf("network thread: read pipe read end.\n");
-    char buf[1024];
-    int n = read(pollfd.fd, buf, sizeof(buf));
+    printf("controller thread: read pipe read end.\n");
+    SDL_Event e;
+    ssize_t n = read(pollfd.fd, &e, sizeof(e));
     if(n == -1)
     {
         perror("read()");
-        network_thread_quit = true;
+        quit = true;
     }
-    if(n == 0)
+    else if(n == 0)
     {
+        printf("controller thread: nothing to read from the sdl evt thread.\n");
         close(pollfd.fd);
-        network_thread_quit = true;
+        quit = true;
+        return;
     }
-    n = send(fd, buf, n, 0);
-    if(n == -1)
+    else if(n != sizeof(e))
     {
-        perror("send()");
-        network_thread_quit = true;
+        printf("controller thread: received %lu, instead of %lu.\n",
+               n, sizeof(e));
     }
+
+    printf("SIDE OF EVENT %lu.\n", sizeof(e));
+    process_input_events(e, game, fd);
 }
 
-void process_server_fd(struct pollfd pollfd)
+void process_server_fd(struct pollfd pollfd, struct game& game)
 {
-    printf("network thread: read socket.\n");
+    printf("controller thread: read socket.\n");
     char buf[1024];
     int n = recv(pollfd.fd, buf, sizeof(buf), 0);
     if(n < 0)
@@ -716,56 +676,88 @@ void process_server_fd(struct pollfd pollfd)
         if(errno != EAGAIN && errno != EWOULDBLOCK)
         {
             perror("recv()");
-            network_thread_quit = true;
+            quit = true;
         }
     }
     else
     {
         if(n == 0)
         {
-            printf("network thread: socket closed.\n");
+            printf("controller thread: socket closed.\n");
             close(pollfd.fd);
-            network_thread_quit = true;
+            quit = true;
         }
         else
         {
-            char *data = (char*)malloc(n);
-            int *len = (int*)malloc(sizeof(int));
-            if(data == nullptr || len == nullptr)
+            enum msg_type type = (enum msg_type)buf[0];
+            printf("msg type=%d, len=%d.\n", type, n);
+            if(type == msg_type::move_msg)
             {
-                perror("malloc()");
-                network_thread_quit = true;
+                struct move_msg msg = *(struct move_msg*)buf;
+                assert(n == sizeof(msg));
+                struct move move;
+                move.src.row = msg.src_row;
+                move.src.col = msg.src_col;
+                move.dst.row = msg.dst_row;
+                move.dst.col = msg.dst_col;
+                game = apply_move(game, move);
+                if(next_valid_moves(game).size() == 0)
+                {
+                    if(is_king_checked(game))
+                        printf("CHECKMATE!!\n");
+                    else
+                        printf("STALEMATE!!\n");
+                }
+            }
+            else if(type == msg_type::reject_move_msg)
+            {
+                printf("rejected msg.\n");
+                assert(n == sizeof(struct reject_move_msg));
+                game = last_game;
+            }
+            else if(type == msg_type::new_game_msg)
+            {
+                struct new_game_msg msg = *(struct new_game_msg*)buf;
+                assert(n == sizeof(msg));
+                printf("new_game_msg={player_color=%d}\n", msg.player_color);
+                fflush(stdout);
+                struct game new_game;
+                game = new_game;
+                game.pieces = initial_board;
+                player_color = msg.player_color;
             }
             else
             {
-                memcpy(data, buf, n);
-                *len = n;
-                SDL_Event event;
-                memset(&event, 0, sizeof(event));
-                event.type = custom_event_type;
-                event.user.code = NETWORK_CODE;
-                event.user.data1 = data;
-                event.user.data2 = len;
-                SDL_PushEvent(&event);
+                assert(false);
             }
         }
     }
 }
 
-void network_thread(string ip, string port)
+void controller_thread(string ip, string port, int sdl_evt_fd)
 {
+    init_sdl();
+
+    struct game game;
+    game.pieces = initial_board;
+    paint_screen(game);
+
     int fd = init_network(ip, port);
-    while(!network_thread_quit)
+
+    while(!quit)
     {
-        struct pollfd fds[2] = {{pipefd[0], POLLIN, 0},{fd, POLLIN, 0}};
+        printf("before poll\n");
+        struct pollfd fds[2] = {{sdl_evt_fd, POLLIN, 0},{fd, POLLIN, 0}};
+        printf("after poll\n");
         int nfds = poll(&fds[0], arraysize(fds), -1/*timeout*/);
-        printf("network thread: event!\n");
+        printf("controller thread: event!\n");
         if(nfds == -1)
         {
             perror("poll()");
-            network_thread_quit = true;
+            quit = true;
         }
 
+        // Refactor this for loop into process_all_fd().
         for(size_t i = 0; i < arraysize(fds); i++)
         {
             struct pollfd pollfd = fds[i];
@@ -775,28 +767,60 @@ void network_thread(string ip, string port)
             }
             if(pollfd.revents & (POLLIN|POLLHUP))
             {
-                if(pollfd.fd == pipefd[0])
-                    process_pipe_fd(pollfd, fd);
+                if(pollfd.fd == sdl_evt_fd)
+                    process_sdl_evt_fd(pollfd, fd, game);
                 else if(pollfd.fd == fd)
-                    process_server_fd(pollfd);
+                    process_server_fd(pollfd, game);
                 else
                     assert(false);
             }
             else
             {
-                printf("network thread: Un-processed event: ");
+                printf("controller thread: Un-processed event: ");
                 print_pollfd(pollfd);
             }
         }
+
+
+        paint_screen(game);
     }
     // TODO We must try to re-connect to the server.
-    printf("network thread: bye!\n");
+    printf("controller thread: bye!\n");
+    clean_up();
+}
+
+void push_evt_into_controller_thread(SDL_Event& e, int fd)
+{
+    ssize_t n = write(fd, &e, sizeof(e));
+    if(n == -1)
+    {
+        perror("write()");
+        exit_failure();
+    }
+    else if(n != sizeof(e))
+    {
+        printf("SDL Thread: error, write() wrote %lu bytes instead of %lu\n",
+               n, sizeof(e));
+        assert(false);
+        exit_failure();
+    }
+}
+
+void sdl_evt_thread(int event_pipe)
+{
+    SDL_Event e;
+    while(SDL_WaitEvent(&e))
+    {
+        push_evt_into_controller_thread(e, event_pipe);
+        if(e.type == SDL_QUIT)
+            break;
+    }
+    printf("sdl evt thread: bye!\n");
 }
 
 int main()
 {
-    init_sdl();
-
+    int pipefd[2] = {-1,-1};
     int res = pipe(pipefd);
     if(res == -1)
     {
@@ -804,21 +828,11 @@ int main()
         exit_failure();
     }
 
-    thread t(network_thread, "127.0.0.1", "55555");
+    thread t(sdl_evt_thread, pipefd[1]);
 
-    struct game game;
-    game.pieces = initial_board;
-    paint_screen(game);
-
-    while(!quit)
-    {
-        process_input_events(game);
-
-        paint_screen(game);
-    }
+    controller_thread("127.0.0.1", "55555", pipefd[0]);
     printf("bye!\n");
 
     close(pipefd[1]);
     t.join();
-    clean_up();
 }
