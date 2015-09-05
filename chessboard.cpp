@@ -306,7 +306,7 @@ void send_move(struct move move, int fd)
 
 void process_input_events(SDL_Event& e, struct game& game, int fd)
 {
-    printf("Input Events!\n");
+    // printf("Input Events!\n");
     switch(e.type)
     {
     case SDL_QUIT:
@@ -348,10 +348,10 @@ void process_input_events(SDL_Event& e, struct game& game, int fd)
                 SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
             }
         }
-        printf("found = %d.\n", found);
+        // printf("found = %d.\n", found);
         if(found)
         {
-            printf("dragged_piece pos = %lu.\n", dragged_piece);
+            // printf("dragged_piece pos = %lu.\n", dragged_piece);
             print_piece(game.pieces[dragged_piece]);
         }
         break;
@@ -504,7 +504,6 @@ void paint_screen(const struct game& game)
     paint_chess_board();
     paint_sprites(game);
 
-    printf("SDL_RenderPresent.\n");
     SDL_RenderPresent(ren);
     SDL_UpdateWindowSurface(display);
 }
@@ -641,7 +640,7 @@ void print_pollfd(struct pollfd pollfd)
 
 void process_sdl_evt_fd(struct pollfd pollfd, int fd, struct game& game)
 {
-    printf("controller thread: read pipe read end.\n");
+    // printf("controller thread: read pipe read end.\n");
     SDL_Event e;
     ssize_t n = read(pollfd.fd, &e, sizeof(e));
     if(n == -1)
@@ -662,13 +661,12 @@ void process_sdl_evt_fd(struct pollfd pollfd, int fd, struct game& game)
                n, sizeof(e));
     }
 
-    printf("SIDE OF EVENT %lu.\n", sizeof(e));
     process_input_events(e, game, fd);
 }
 
 void process_server_fd(struct pollfd pollfd, struct game& game)
 {
-    printf("controller thread: read socket.\n");
+    // printf("controller thread: read socket.\n");
     char buf[1024];
     int n = recv(pollfd.fd, buf, sizeof(buf), 0);
     if(n < 0)
@@ -746,11 +744,8 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
 
     while(!quit)
     {
-        printf("before poll\n");
         struct pollfd fds[2] = {{sdl_evt_fd, POLLIN, 0},{fd, POLLIN, 0}};
-        printf("after poll\n");
         int nfds = poll(&fds[0], arraysize(fds), -1/*timeout*/);
-        printf("controller thread: event!\n");
         if(nfds == -1)
         {
             perror("poll()");
