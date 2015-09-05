@@ -422,7 +422,10 @@ void process_input_events(struct game& game)
                 free(e.user.data1);
                 free(e.user.data2);
             }
-            printf("e.type=%X.\n", e.type);
+            else
+            {
+                printf("e.type=%X.\n", e.type);
+            }
             break;
         }
     }
