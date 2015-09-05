@@ -611,6 +611,30 @@ int init_network()
     return fd;
 }
 
+void print_poll_events(short events)
+{
+    if(events & POLLIN) printf("POLLIN|");
+    if(events & POLLPRI) printf("POLLPRI|");
+    if(events & POLLOUT) printf("POLLOUT|");
+    if(events & POLLRDHUP) printf("POLLRDHUP|");
+    if(events & POLLERR) printf("POLLERR|");
+    if(events & POLLHUP) printf("POLLHUP|");
+    if(events & POLLNVAL) printf("POLLNVAL|");
+    if(events & POLLRDNORM) printf("POLLRDNORM|");
+    if(events & POLLRDBAND) printf("POLLRDBAND|");
+    if(events & POLLWRNORM) printf("POLLWRNORM|");
+    if(events & POLLWRBAND) printf("POLLWRBAND|");
+}
+
+void print_pollfd(struct pollfd pollfd)
+{
+    printf("pollfd={fd=%d,events=", pollfd.fd);
+    print_poll_events(pollfd.events);
+    printf(",revents=");
+    print_poll_events(pollfd.revents);
+    printf("}\n");
+}
+
 void network_thread()
 {
     int fd = init_network();
@@ -618,6 +642,7 @@ void network_thread()
     {
         struct pollfd fds[2] = {{pipefd[0], POLLIN, 0},{fd, POLLIN, 0}};
         int nfds = poll(&fds[0], arraysize(fds), -1/*timeout*/);
+        printf("network thread: event!\n");
         if(nfds == -1)
         {
             perror("poll()");
@@ -627,7 +652,8 @@ void network_thread()
         for(size_t i = 0; i < arraysize(fds); i++)
         {
             struct pollfd pollfd = fds[i];
-            if(pollfd.revents == POLLIN)
+            print_pollfd(pollfd);
+            if(pollfd.revents == POLLIN || pollfd.revents == POLLHUP)
             {
                 if(pollfd.fd == pipefd[0])
                 {
