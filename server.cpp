@@ -138,7 +138,6 @@ void process_move(int fd, struct move_msg *move_msg)
     }
     else
     {
-        // TODO Reject the move by the player originating the move.
         struct reject_move_msg reject_move_msg;
         reject_move_msg.msg_type = msg_type::reject_move_msg;
         ssize_t n = send(fd, &reject_move_msg, sizeof(reject_move_msg), 0);
