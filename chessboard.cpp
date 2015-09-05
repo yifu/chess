@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
+#include <arpa/inet.h>
 #include <thread>
 #include <poll.h>
 
@@ -599,7 +600,7 @@ void init_sdl()
     SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
 }
 
-int init_network()
+int init_network(string ip, string port)
 {
     int fd = socket(AF_INET, SOCK_STREAM, 0);
     if(fd == -1)
@@ -620,8 +621,14 @@ int init_network()
     struct sockaddr_in addr;
     memset(&addr, 0, sizeof(addr));
     addr.sin_family = AF_INET;
-    addr.sin_port = htons(55555);
-    addr.sin_addr.s_addr = INADDR_ANY;
+    addr.sin_port = htons(atoi(port.c_str()));
+    res = inet_pton(AF_INET, ip.c_str(), &addr.sin_addr);
+    if(res != 1)
+    {
+        perror("inet_pton()");
+        network_thread_quit = true;
+    }
+
 
     // TODO Handle SIGFPIPE.
     res = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
@@ -745,9 +752,9 @@ void process_server_fd(struct pollfd pollfd)
     }
 }
 
-void network_thread()
+void network_thread(string ip, string port)
 {
-    int fd = init_network();
+    int fd = init_network(ip, port);
     while(!network_thread_quit)
     {
         struct pollfd fds[2] = {{pipefd[0], POLLIN, 0},{fd, POLLIN, 0}};
@@ -797,7 +804,7 @@ int main()
         exit_failure();
     }
 
-    thread t(network_thread);
+    thread t(network_thread, "127.0.0.1", "55555");
 
     struct game game;
     game.pieces = initial_board;
