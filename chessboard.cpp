@@ -54,7 +54,7 @@ SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square
 enum color player_color;
 
 size_t dragged_piece = -1;
-SDL_MouseMotionEvent mouse;
+Sint32 mouse_x = 0, mouse_y = 0;
 
 bool operator != (SDL_Rect l, SDL_Rect r)
 {
@@ -309,6 +309,7 @@ void process_input_events(struct game& game)
 
     if(SDL_WaitEvent(&e))
     {
+        // printf("Input Events!\n");
         switch(e.type)
         {
         case SDL_QUIT:
@@ -326,7 +327,8 @@ void process_input_events(struct game& game)
         }
         case SDL_MOUSEMOTION:
         {
-            mouse = e.motion;
+            mouse_x = e.motion.x;
+            mouse_y = e.motion.y;
             break;
         }
         case SDL_MOUSEBUTTONDOWN:
@@ -346,6 +348,9 @@ void process_input_events(struct game& game)
                         continue;
                     found = true;
                     dragged_piece = i;
+                    mouse_x = e.button.x;
+                    mouse_y = e.button.y;
+                    SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
                 }
             }
             printf("found = %d.\n", found);
@@ -384,6 +389,9 @@ void process_input_events(struct game& game)
                     }
                 }
                 dragged_piece = -1;
+                mouse_x = e.button.x;
+                mouse_y = e.button.y;
+                SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
             }
             break;
         }
@@ -479,8 +487,8 @@ void paint_sprites(const struct game& game)
 
         SDL_Texture *texture = deduct_texture(piece);
         SDL_Rect rect;
-        rect.x = mouse.x - square_width / 2;
-        rect.y = mouse.y - square_heigh / 2;
+        rect.x = mouse_x - square_width / 2;
+        rect.y = mouse_y - square_heigh / 2;
         rect.w = square_width;
         rect.h = square_heigh;
         SDL_RenderCopy(ren, texture, nullptr, &rect);
@@ -552,7 +560,8 @@ void init_sdl()
         exit_failure();
     }
 
-    SDL_EventState(SDL_WINDOWEVENT, SDL_IGNORE);
+    SDL_EventState(SDL_WINDOWEVENT, SDL_DISABLE);
+    SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
 }
 
 int init_network()
