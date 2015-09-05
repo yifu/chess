@@ -419,6 +419,13 @@ void process_input_events(struct game& game)
                 move.dst.row = msg.dst_row;
                 move.dst.col = msg.dst_col;
                 game = apply_move(game, move);
+                if(next_valid_moves(game).size() == 0)
+                {
+                    if(is_king_checked(game))
+                        printf("CHECKMATE!!\n");
+                    else
+                        printf("STALEMATE!!\n");
+                }
                 free(e.user.data1);
                 free(e.user.data2);
             }
