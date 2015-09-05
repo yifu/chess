@@ -635,6 +635,75 @@ void print_pollfd(struct pollfd pollfd)
     printf("}\n");
 }
 
+void process_pipe_fd(struct pollfd pollfd, int fd)
+{
+    printf("network thread: read pipe read end.\n");
+    char buf[1024];
+    int n = read(pollfd.fd, buf, sizeof(buf));
+    if(n == -1)
+    {
+        perror("read()");
+        network_thread_quit = true;
+    }
+    if(n == 0)
+    {
+        close(pollfd.fd);
+        network_thread_quit = true;
+    }
+    n = send(fd, buf, n, 0);
+    if(n == -1)
+    {
+        perror("send()");
+        network_thread_quit = true;
+    }
+}
+
+void process_server_fd(struct pollfd pollfd)
+{
+    printf("network thread: read socket.\n");
+    char buf[1024];
+    int n = recv(pollfd.fd, buf, sizeof(buf), 0);
+    if(n < 0)
+    {
+        if(errno != EAGAIN && errno != EWOULDBLOCK)
+        {
+            perror("recv()");
+            network_thread_quit = true;
+        }
+    }
+    else
+    {
+        if(n == 0)
+        {
+            printf("network thread: socket closed.\n");
+            close(pollfd.fd);
+            network_thread_quit = true;
+        }
+        else
+        {
+            char *data = (char*)malloc(n);
+            int *len = (int*)malloc(sizeof(int));
+            if(data == nullptr || len == nullptr)
+            {
+                perror("malloc()");
+                network_thread_quit = true;
+            }
+            else
+            {
+                memcpy(data, buf, n);
+                *len = n;
+                SDL_Event event;
+                memset(&event, 0, sizeof(event));
+                event.type = custom_event_type;
+                event.user.code = NETWORK_CODE;
+                event.user.data1 = data;
+                event.user.data2 = len;
+                SDL_PushEvent(&event);
+            }
+        }
+    }
+}
+
 void network_thread()
 {
     int fd = init_network();
@@ -652,76 +721,23 @@ void network_thread()
         for(size_t i = 0; i < arraysize(fds); i++)
         {
             struct pollfd pollfd = fds[i];
-            print_pollfd(pollfd);
-            if(pollfd.revents == POLLIN || pollfd.revents == POLLHUP)
+            if(pollfd.revents == 0)
+            {
+                continue;
+            }
+            if(pollfd.revents & (POLLIN|POLLHUP))
             {
                 if(pollfd.fd == pipefd[0])
-                {
-                    printf("network thread: read pipe read end.\n");
-                    char buf[1024];
-                    int n = read(pipefd[0], buf, sizeof(buf));
-                    if(n == -1)
-                    {
-                        perror("read()");
-                        network_thread_quit = true;
-                    }
-                    if(n == 0)
-                    {
-                        close(pipefd[0]);
-                        network_thread_quit = true;
-                    }
-                    n = send(fd, buf, n, 0);
-                    if(n == -1)
-                    {
-                        perror("send()");
-                        network_thread_quit = true;
-                    }
-                }
+                    process_pipe_fd(pollfd, fd);
                 else if(pollfd.fd == fd)
-                {
-                    printf("network thread: read socket.\n");
-                    char buf[1024];
-                    int n = recv(fd, buf, sizeof(buf), 0);
-                    if(n < 0)
-                    {
-                        if(errno != EAGAIN && errno != EWOULDBLOCK)
-                        {
-                            perror("recv()");
-                            network_thread_quit = true;
-                        }
-                    }
-                    else
-                    {
-                        if(n == 0)
-                        {
-                            printf("network thread: socket closed.\n");
-                            close(fd);
-                            network_thread_quit = true;
-                        }
-                        else
-                        {
-                            char *data = (char*)malloc(n);
-                            int *len = (int*)malloc(sizeof(int));
-                            if(data == nullptr || len == nullptr)
-                            {
-                                perror("malloc()");
-                                network_thread_quit = true;
-                            }
-                            else
-                            {
-                                memcpy(data, buf, n);
-                                *len = n;
-                                SDL_Event event;
-                                memset(&event, 0, sizeof(event));
-                                event.type = custom_event_type;
-                                event.user.code = NETWORK_CODE;
-                                event.user.data1 = data;
-                                event.user.data2 = len;
-                                SDL_PushEvent(&event);
-                            }
-                        }
-                    }
-                }
+                    process_server_fd(pollfd);
+                else
+                    assert(false);
+            }
+            else
+            {
+                printf("network thread: Un-processed event: ");
+                print_pollfd(pollfd);
             }
         }
     }
