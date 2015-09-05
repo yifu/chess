@@ -7,6 +7,7 @@
 #include <vector>
 #include <assert.h>
 #include <unistd.h>
+#include <algorithm>
 
 #include "net_protocol.hpp"
 #include "game.hpp"
@@ -60,6 +61,7 @@ void process_login(int fd, struct login *login)
     if(login_ack.player_color == color::white)
     {
         struct srv_game srv_game;
+        srv_game.game.pieces = initial_board;
         srv_game.white_fd = fd;
         current_game = srv_game;
     }
@@ -97,13 +99,46 @@ void process_move(int fd, struct move_msg *move_msg)
     printf("move_msg={src={row=%d,col=%d},dst={row=%d,col=%d}}\n",
            move_msg->src_row, move_msg->dst_col,
            move_msg->dst_row, move_msg->dst_col);
-    int opponent_fd = find_opponent_fd(fd);
+    assert(current_game.white_fd != -1 && current_game.black_fd != -1);
+    int opponent_fd = -1;
+    if(fd == current_game.white_fd)
+        opponent_fd = current_game.black_fd;
+    else if(fd == current_game.black_fd)
+        opponent_fd = current_game.white_fd;
+    else
+        assert(false);
     assert(opponent_fd != -1);
-    int n = send(opponent_fd, move_msg, sizeof(*move_msg), 0);
-    if(n == -1)
+
+    struct move candidate_move = {{move_msg->src_row, move_msg->src_col},
+                                  {move_msg->dst_row, move_msg->dst_col}};
+    vector<struct move> valid_moves = next_valid_moves(current_game.game);
+    auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
+    if(found != valid_moves.end())
     {
-        perror("send()");
-        exit(EXIT_FAILURE);
+        current_game.game = apply_move(current_game.game, candidate_move);
+
+        int n = send(opponent_fd, move_msg, sizeof(*move_msg), 0);
+        if(n == -1)
+        {
+            perror("send()");
+            exit(EXIT_FAILURE);
+        }
+
+        if(next_valid_moves(current_game.game).size() == 0)
+        {
+            if(is_king_checked(current_game.game))
+                printf("CHECKMATE!!\n");
+            else
+                printf("STALEMATE!!\n");
+            // TODO The game end here. Mark it into the game. As a
+            // result when we receive a new move from one of the
+            // opponent we must check the party is still open and
+            // reject any move.
+        }
+    }
+    else
+    {
+        // TODO Reject the move by the player originating the move.
     }
 }
 
