@@ -60,6 +60,7 @@ void match_players()
         if(n == -1)
         {
             perror("send()");
+            assert(false);
             exit(EXIT_FAILURE);
         }
 
@@ -68,6 +69,7 @@ void match_players()
         if(n == -1)
         {
             perror("send()");
+            assert(false);
             exit(EXIT_FAILURE);
         }
 
@@ -91,6 +93,7 @@ void process_login(int fd, struct login *login)
     if(n == -1)
     {
         perror("send()");
+        assert(false);
         exit(EXIT_FAILURE);
     }
     printf("login ack sent!\n");
@@ -138,6 +141,7 @@ void process_move(int fd, struct move_msg *move_msg)
         if(n == -1)
         {
             perror("send()");
+            assert(false);
             exit(EXIT_FAILURE);
         }
 
@@ -162,6 +166,7 @@ void process_move(int fd, struct move_msg *move_msg)
         if(n == -1)
         {
             perror("send()");
+            assert(false);
             exit(EXIT_FAILURE);
         }
     }
@@ -174,6 +179,7 @@ void process_listen_fd(int fd)
     if(new_fd == -1)
     {
         perror("accept()");
+        assert(false);
         exit(EXIT_FAILURE);
     }
     printf("accepted fd = %d.\n", new_fd);
@@ -192,6 +198,7 @@ void process_player_fd(int i, struct pollfd pollfd)
     if(n == -1)
     {
         perror("recv()");
+        assert(false);
         exit(EXIT_FAILURE);
     }
     else if(n == 0)
@@ -201,6 +208,7 @@ void process_player_fd(int i, struct pollfd pollfd)
         if(res == -1)
         {
             perror("close()");
+            assert(false);
             exit(EXIT_FAILURE);
         }
 
@@ -220,6 +228,7 @@ void process_player_fd(int i, struct pollfd pollfd)
         if(n == -1)
         {
             perror("send()");
+            assert(false);
             exit(EXIT_FAILURE);
         }
 
@@ -251,6 +260,7 @@ int main()
     if(listen_fd == -1)
     {
         perror("socket()");
+        assert(false);
         exit(EXIT_FAILURE);
     }
 
@@ -263,6 +273,7 @@ int main()
     if(res == -1)
     {
         perror("setsockopt(SO_REUSEADDR)");
+        assert(false);
         exit(EXIT_FAILURE);
     }
 
@@ -271,6 +282,7 @@ int main()
     if(res == -1)
     {
         perror("setsockopt(TCP_NODELAY)");
+        assert(false);
         exit(EXIT_FAILURE);
     }
 
@@ -284,6 +296,7 @@ int main()
     if(res == -1)
     {
         perror("bind()");
+        assert(false);
         exit(EXIT_FAILURE);
     }
 
@@ -291,6 +304,7 @@ int main()
     if(res == -1)
     {
         perror("listen()");
+        assert(false);
         exit(EXIT_FAILURE);
     }
 
@@ -300,6 +314,7 @@ int main()
         if(nfds == -1)
         {
             perror("poll()");
+            assert(false);
             exit(EXIT_FAILURE);
         }
 
