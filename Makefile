@@ -24,6 +24,8 @@ LDLIBS=$(shell sdl2-config --libs) -lSDL2_image
 #files), one of which has a name matching that of the executable
 #file. Thus, x: y.o z.o when x.c, y.c and z.c all exist[...]
 
+.PHONY: debug release clean
+
 debug: CXXFLAGS += -DDEBUG
 debug: chessboard server
 
