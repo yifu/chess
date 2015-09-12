@@ -87,29 +87,6 @@ void process_login(int fd, struct login *login)
 
     waiting_list.push_back(fd);
 
-    // if(last_color == color::white)
-    // {
-    //     login_ack.player_color = color::black;
-    //     last_color = color::black;
-    // }
-    // else
-    // {
-    //     login_ack.player_color = color::white;
-    //     last_color = color::white;
-    // }
-
-    // if(login_ack.player_color == color::white)
-    // {
-    //     struct srv_game srv_game;
-    //     srv_game.game.pieces = initial_board;
-    //     srv_game.white_fd = fd;
-    //     current_game = srv_game;
-    // }
-    // else
-    // {
-    //     current_game.black_fd = fd;
-    // }
-
     int n = send(fd, &login_ack, sizeof(login_ack), 0);
     if(n == -1)
     {
