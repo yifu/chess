@@ -24,7 +24,6 @@ bool check_for_valid_moves = true;
 struct game last_game;
 
 bool quit = false;
-int exit_result = EXIT_SUCCESS;
 
 SDL_Window *display = nullptr;
 SDL_Renderer *ren = nullptr;
@@ -198,18 +197,10 @@ void clean_up()
     IMG_Quit();
 }
 
-void exit_success()
-{
-    clean_up();
-    quit = true;
-    exit_result = EXIT_SUCCESS;
-}
-
 void exit_failure()
 {
     clean_up();
-    quit = true;
-    exit_result = EXIT_FAILURE;
+    exit(EXIT_FAILURE);
 }
 
 SDL_Texture *init_texture(string filename)
@@ -531,7 +522,7 @@ int init_network(string ip, string port)
     if(fd == -1)
     {
         perror("socket()");
-        quit = true;
+        exit_failure();
     }
 
     int optval = 1;
@@ -540,7 +531,7 @@ int init_network(string ip, string port)
     if(res == -1)
     {
         perror("setsockopt(TCP_NODELAY)");
-        quit = true;
+        exit_failure();
     }
 
     struct sockaddr_in addr;
@@ -551,7 +542,7 @@ int init_network(string ip, string port)
     if(res != 1)
     {
         perror("inet_pton()");
-        quit = true;
+        exit_failure();
     }
 
 
@@ -560,7 +551,7 @@ int init_network(string ip, string port)
     if(res == -1)
     {
         perror("connect()");
-        quit = true;
+        exit_failure();
     }
 
     struct login login;
@@ -570,7 +561,7 @@ int init_network(string ip, string port)
     if(res == -1)
     {
         perror("send()");
-        quit = true;
+        exit_failure();
     }
 
     // TODO Move that recv() call into process_server_fd().
@@ -579,7 +570,7 @@ int init_network(string ip, string port)
     if(n == -1)
     {
         perror("recv()");
-        quit = true;
+        exit_failure();
     }
 
     return fd;
@@ -617,7 +608,7 @@ void process_sdl_evt_fd(struct pollfd pollfd, int fd, struct game& game)
     if(n == -1)
     {
         perror("read()");
-        quit = true;
+        exit_failure();
     }
     else if(n == 0)
     {
@@ -645,7 +636,7 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
         if(errno != EAGAIN && errno != EWOULDBLOCK)
         {
             perror("recv()");
-            quit = true;
+            exit_failure();
         }
     }
     else
@@ -720,7 +711,7 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
         if(nfds == -1)
         {
             perror("poll()");
-            quit = true;
+            exit_failure();
         }
 
         // Refactor this for loop into process_all_fd().
