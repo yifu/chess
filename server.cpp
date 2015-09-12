@@ -232,6 +232,9 @@ void process_player_fd(int i, struct pollfd pollfd)
             exit(EXIT_FAILURE);
         }
 
+        // TODO
+        // 1- Once closed, find every fd and set them to -1. Or change the fd with playerpos?
+        // 2- Check for the fd value and test it for -1 before calling send() or anything else.
         fds[i] = {-1,0,0};
         waiting_list.push_back(opponent_fd);
     }
