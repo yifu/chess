@@ -31,9 +31,6 @@ SDL_Renderer *ren = nullptr;
 
 SDL_Surface *icon = nullptr;
 
-constexpr Sint32 NETWORK_CODE = 1;
-Uint32 custom_event_type;
-
 SDL_Texture *white_pawn_texture = nullptr;
 SDL_Texture *white_rook_texture = nullptr;
 SDL_Texture *white_knight_texture = nullptr;
@@ -401,21 +398,6 @@ void process_input_events(SDL_Event& e, struct game& game, int fd)
     default:
     {
         printf("e.type=%d\n", e.type);
-//         if(e.type == custom_event_type)
-//         {
-// remove all that             if(e.user.code != NETWORK_CODE)
-//             {
-//                 assert(false);
-//                 break;
-//             }
-//             char *buf = (char*)e.user.data1;
-//             free(e.user.data1);
-//             free(e.user.data2);
-//         }
-//         else
-//         {
-//             printf("e.type=%X.\n", e.type);
-//         }
         break;
     }
     }
@@ -424,10 +406,6 @@ void process_input_events(SDL_Event& e, struct game& game, int fd)
 void paint_chess_board()
 {
     SDL_Rect dst;
-    // TODO BIG REFACTORING. We must use the list from the game, and
-    // re-generate the sprites from this list, at each turn of the
-    // game loop.
-
     dst.x = dst.y = 0;
     dst.w = square_width;
     dst.h = square_heigh;
@@ -542,13 +520,6 @@ void init_sdl()
     SDL_ShowWindow(display);
 
     init_textures();
-
-    // custom_event_type = SDL_RegisterEvents(1);
-    // if(custom_event_type == (Uint32)-1)
-    // {
-    //     printf("SDL_RegisterEvents() error : %s.\n", SDL_GetError());
-    //     exit_failure();
-    // }
 
     SDL_EventState(SDL_WINDOWEVENT, SDL_DISABLE);
     SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
