@@ -224,6 +224,7 @@ void process_player_fd(int i, struct pollfd pollfd)
         }
 
         fds[i] = {-1,0,0};
+        waiting_list.push_back(opponent_fd);
     }
     else
     {
