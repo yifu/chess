@@ -686,6 +686,10 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 game.pieces = initial_board;
                 player_color = msg.player_color;
             }
+            else if(type == msg_type::game_evt_msg)
+            {
+                printf("Opponent resigned.\n");
+            }
             else
             {
                 assert(false);

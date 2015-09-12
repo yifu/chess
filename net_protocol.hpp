@@ -10,6 +10,12 @@ enum class msg_type : uint8_t
     move_msg = 0x03,
     reject_move_msg = 0x04,
     new_game_msg = 0x05,
+    game_evt_msg = 0x06,
+};
+
+enum class game_evt_type : uint8_t
+{
+    opponent_resigned = 0x01,
 };
 
 #pragma pack(push,1)
@@ -41,6 +47,12 @@ struct new_game_msg
 {
     enum msg_type msg_type;
     enum color player_color;
+};
+
+struct game_evt_msg
+{
+    enum msg_type msg_type;
+    enum game_evt_type game_evt_type;
 };
 
 #pragma pack(pop)

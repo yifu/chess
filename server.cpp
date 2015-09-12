@@ -203,6 +203,26 @@ void process_player_fd(int i, struct pollfd pollfd)
             perror("close()");
             exit(EXIT_FAILURE);
         }
+
+        int opponent_fd = -1;
+        if(fd == current_game.white_fd)
+            opponent_fd = current_game.black_fd;
+        else if(fd == current_game.black_fd)
+            opponent_fd = current_game.white_fd;
+        else
+            assert(false);
+        assert(opponent_fd != -1);
+
+        struct game_evt_msg msg;
+        msg.msg_type = msg_type::game_evt_msg;
+        msg.game_evt_type = game_evt_type::opponent_resigned;
+        ssize_t n = send(opponent_fd, &msg, sizeof(msg), 0);
+        if(n == -1)
+        {
+            perror("send()");
+            exit(EXIT_FAILURE);
+        }
+
         fds[i] = {-1,0,0};
     }
     else
