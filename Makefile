@@ -11,7 +11,7 @@ CXXFLAGS=-Werror -Wall -Wextra -Wpedantic -ggdb -std=c++11 $(shell sdl2-config -
 CC=g++
 LDFLAGS=
 LOADLIBES=
-LDLIBS=$(shell sdl2-config --libs) -lSDL2_image
+LDLIBS=$(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
 # From stackoverflow
 # [http://stackoverflow.com/questions/17052006/make-ldlibs-deprecated]:
 # "Non-library linker flags, such as -L, should go in the LDFLAGS
