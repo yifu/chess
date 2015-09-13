@@ -13,12 +13,16 @@
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 
 #include "utils.hpp"
 #include "game.hpp"
 #include "net_protocol.hpp"
 
 using namespace std;
+
+constexpr int screenwidth = 640;
+constexpr int screenheigh = 640;
 
 bool check_for_valid_moves = true;
 struct game last_game;
@@ -44,6 +48,8 @@ SDL_Texture *black_bishop_texture = nullptr;
 SDL_Texture *black_queen_texture = nullptr;
 SDL_Texture *black_king_texture = nullptr;
 
+SDL_Texture *text_texture = nullptr;
+
 int square_width, square_heigh;
 
 SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square_heigh };
@@ -52,6 +58,8 @@ enum color player_color;
 
 size_t dragged_piece = -1;
 Sint32 mouse_x = 0, mouse_y = 0;
+
+bool in_menu = true;
 
 bool operator != (SDL_Rect l, SDL_Rect r)
 {
@@ -188,6 +196,9 @@ void clean_up()
     if(black_king_texture)
         SDL_DestroyTexture(black_king_texture);
 
+    if(text_texture)
+        SDL_DestroyTexture(text_texture);
+
     if(ren)
         SDL_DestroyRenderer(ren);
 
@@ -195,6 +206,7 @@ void clean_up()
         SDL_DestroyWindow(display);
     SDL_Quit();
     IMG_Quit();
+    TTF_Quit();
 }
 
 void exit_failure()
@@ -306,6 +318,11 @@ void process_input_events(SDL_Event& e, struct game& game, int fd)
     case SDL_KEYDOWN:
     {
         printf("key down %d\n", e.key.keysym.sym);
+        if(e.key.keysym.sym == SDLK_ESCAPE)
+        {
+            in_menu = !in_menu;
+            printf("in_menu = %d.\n", in_menu);
+        }
         break;
     }
     case SDL_MOUSEMOTION:
@@ -401,15 +418,35 @@ void paint_chess_board()
     dst.w = square_width;
     dst.h = square_heigh;
 
-    for(int c = 0; c < 8; c++)
+    for(int col = 0; col < 8; col++)
     {
         dst.x = 0;
-        for(int r = 0; r < 8; r++)
+        for(int row = 0; row < 8; row++)
         {
-            if((c % 2 == 0 && r % 2 == 0) || (c % 2 == 1 && r % 2 == 1))
-                SDL_SetRenderDrawColor(ren, 200, 200, 216, SDL_ALPHA_OPAQUE); // White square
+            Uint8 r,g,b;
+            if((col % 2 == 0 && row % 2 == 0) || (col % 2 == 1 && row % 2 == 1))
+            {
+                // White square
+                r = 200;
+                g = 200;
+                b = 216;
+            }
             else
-                SDL_SetRenderDrawColor(ren, 100, 100, 140, SDL_ALPHA_OPAQUE); // Dark square
+            {
+                // Dark square
+                r = 100;
+                g = 100;
+                b = 140;
+            }
+
+            if(in_menu)
+            {
+                r *= (100/255.0);
+                g *= (100/255.0);
+                b *= (100/255.0);
+            }
+
+            SDL_SetRenderDrawColor(ren, r, g, b, SDL_ALPHA_OPAQUE);
 
             // printf("dst.x=%d, dst.y=%d, dst.w=%d, dst.h=%d.\n",
             //        dst.x, dst.y, dst.w, dst.h);
@@ -433,6 +470,18 @@ void paint_sprites(const struct game& game)
             continue;
 
         SDL_Texture *texture = deduct_texture(piece);
+        Uint8 r,g,b;
+        if(in_menu)
+            r = g = b = 100;
+        else
+            r = g = b = 255;
+
+        if(SDL_SetTextureColorMod(texture, r, g, b) == -1)
+        {
+            fprintf(stderr, "SDL_SetTextureColorMod: %s.\n", SDL_GetError());
+            exit_failure();
+        }
+
         SDL_Rect rect = square2rect(piece.square);
         SDL_RenderCopy(ren, texture, nullptr, &rect);
     }
@@ -463,6 +512,28 @@ void initWindowIcon()
     SDL_SetWindowIcon(display, icon);
 }
 
+void paint_menu()
+{
+    if(!in_menu)
+        return;
+    SDL_Rect rect;
+    if(SDL_QueryTexture(text_texture, nullptr, nullptr,
+                        &rect.w, &rect.h) == -1)
+    {
+        fprintf(stderr, "SDL_QueryTexture(): %s.\n", SDL_GetError());
+        exit_failure();
+    }
+
+    rect.x = screenwidth/2 - rect.w/2;
+    rect.y = screenheigh/2 - rect.h/2;
+
+    if(SDL_RenderCopy(ren, text_texture, NULL, &rect) == -1)
+    {
+        fprintf(stderr, "SDL_RenderCopy(): %s.\n", SDL_GetError());
+        exit_failure();
+    }
+}
+
 void paint_screen(const struct game& game)
 {
     assert(display);
@@ -472,15 +543,53 @@ void paint_screen(const struct game& game)
 
     paint_chess_board();
     paint_sprites(game);
+    paint_menu();
 
     SDL_RenderPresent(ren);
 }
 
+void init_font()
+{
+    if(TTF_Init() == -1)
+    {
+        fprintf(stderr, "TTF_Init(): %s.\n", TTF_GetError());
+        exit_failure();
+    }
+
+    // TODO Make this parametrable. Or we should be able to get the
+    // list of installed font. There might be a specific debian
+    // package to install as a dependency. 2- The point size must be
+    // adequate: how find to we find a correct value here?
+    TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSerif.ttf", 40);
+    if(!font)
+    {
+        fprintf(stderr, "TTF_OpenFont(): %s.\n", TTF_GetError());
+        exit_failure();
+    }
+
+    SDL_Color color={255,255,255,0};
+    SDL_Surface *text_surface = TTF_RenderText_Blended(font, "play online", color);
+    if(!text_surface)
+    {
+        fprintf(stderr, "TTF_RenderText_Solid(): %s.\n", TTF_GetError());
+        exit_failure();
+    }
+
+    TTF_CloseFont(font);
+    font = nullptr;
+
+    text_texture = SDL_CreateTextureFromSurface(ren, text_surface);
+    if(!text_texture)
+    {
+        fprintf(stderr, "SDL_CreateTextureFromSurface(): %s.\n", SDL_GetError());
+        exit_failure();
+    }
+
+    SDL_FreeSurface(text_surface);
+}
+
 void init_sdl()
 {
-    constexpr int screenwidth = 640;
-    constexpr int screenheigh = 640;
-
     if(SDL_Init(SDL_INIT_EVERYTHING) < 0) {
         cerr << "SDL_Init error: " << SDL_GetError() << "." << endl;
         exit_failure();
@@ -700,6 +809,7 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
 void controller_thread(string ip, string port, int sdl_evt_fd)
 {
     init_sdl();
+    init_font();
 
     struct game game;
     game.pieces = initial_board;
