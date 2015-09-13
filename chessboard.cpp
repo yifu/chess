@@ -474,7 +474,6 @@ void paint_screen(const struct game& game)
     paint_sprites(game);
 
     SDL_RenderPresent(ren);
-    SDL_UpdateWindowSurface(display);
 }
 
 void init_sdl()
