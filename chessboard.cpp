@@ -304,6 +304,79 @@ void send_move(struct move move, int fd)
     }
 }
 
+void process_sdl_mousebuttondown(SDL_Event& e, struct game& game)
+{
+    // print_mouse_button_event(e);
+    bool found = false;
+    for(size_t i = 0; i < game.pieces.size(); i++)
+    {
+        SDL_Rect rect = square2rect(game.pieces[i].square);
+        if(is_hitting_rect(rect, e.button.x, e.button.y))
+        {
+            if(game.pieces[i].color != player_color)
+                continue;
+            if(game.cur_player == opponent(player_color))
+                continue;
+            if(game.pieces[i].is_captured)
+                continue;
+            found = true;
+            dragged_piece = i;
+            mouse_x = e.button.x;
+            mouse_y = e.button.y;
+            SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
+        }
+    }
+    // printf("found = %d.\n", found);
+    if(found)
+    {
+        // printf("dragged_piece pos = %lu.\n", dragged_piece);
+        print_piece(game.pieces[dragged_piece]);
+    }
+}
+
+void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
+{
+    if(dragged_piece != (size_t)-1)
+    {
+        struct piece& piece = game.pieces[dragged_piece];
+        struct square src = piece.square;
+        struct square dst = detect_square(e.button.x, e.button.y);
+        struct move candidate_move = {src, dst};
+
+        // TODO Refactor the following. Must be moved into game.cpp file?
+
+        if(check_for_valid_moves)
+        {
+            vector<struct move> valid_moves = next_valid_moves(game);
+            auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
+            if(found != valid_moves.end())
+            {
+                game = apply_move(game, candidate_move);
+                send_move(candidate_move, fd);
+
+                if(next_valid_moves(game).size() == 0)
+                {
+                    if(is_king_checked(game))
+                        printf("CHECKMATE!!\n");
+                    else
+                        printf("STALEMATE!!\n");
+                }
+            }
+        }
+        else
+        {
+            last_game = game;
+            game = apply_move(game, candidate_move);
+            send_move(candidate_move, fd);
+        }
+        dragged_piece = -1;
+        mouse_x = e.button.x;
+        mouse_y = e.button.y;
+        SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
+    }
+
+}
+
 void process_input_events(SDL_Event& e, struct game& game, int fd)
 {
     // printf("Input Events!\n");
@@ -333,74 +406,12 @@ void process_input_events(SDL_Event& e, struct game& game, int fd)
     }
     case SDL_MOUSEBUTTONDOWN:
     {
-        print_mouse_button_event(e);
-        bool found = false;
-        for(size_t i = 0; i < game.pieces.size(); i++)
-        {
-            SDL_Rect rect = square2rect(game.pieces[i].square);
-            if(is_hitting_rect(rect, e.button.x, e.button.y))
-            {
-                if(game.pieces[i].color != player_color)
-                    continue;
-                if(game.cur_player == opponent(player_color))
-                    continue;
-                if(game.pieces[i].is_captured)
-                    continue;
-                found = true;
-                dragged_piece = i;
-                mouse_x = e.button.x;
-                mouse_y = e.button.y;
-                SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
-            }
-        }
-        // printf("found = %d.\n", found);
-        if(found)
-        {
-            // printf("dragged_piece pos = %lu.\n", dragged_piece);
-            print_piece(game.pieces[dragged_piece]);
-        }
+        process_sdl_mousebuttondown(e, game);
         break;
     }
     case SDL_MOUSEBUTTONUP:
     {
-        if(dragged_piece != (size_t)-1)
-        {
-            struct piece& piece = game.pieces[dragged_piece];
-            struct square src = piece.square;
-            struct square dst = detect_square(e.button.x, e.button.y);
-            struct move candidate_move = {src, dst};
-
-            // TODO Refactor the following. Must be moved into game.cpp file?
-
-            if(check_for_valid_moves)
-            {
-                vector<struct move> valid_moves = next_valid_moves(game);
-                auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
-                if(found != valid_moves.end())
-                {
-                    game = apply_move(game, candidate_move);
-                    send_move(candidate_move, fd);
-
-                    if(next_valid_moves(game).size() == 0)
-                    {
-                        if(is_king_checked(game))
-                            printf("CHECKMATE!!\n");
-                        else
-                            printf("STALEMATE!!\n");
-                    }
-                }
-            }
-            else
-            {
-                last_game = game;
-                game = apply_move(game, candidate_move);
-                send_move(candidate_move, fd);
-            }
-            dragged_piece = -1;
-            mouse_x = e.button.x;
-            mouse_y = e.button.y;
-            SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
-        }
+        process_sdl_mousebuttonup(e, game, fd);
         break;
     }
     default:
