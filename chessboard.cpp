@@ -48,8 +48,6 @@ SDL_Texture *black_bishop_texture = nullptr;
 SDL_Texture *black_queen_texture = nullptr;
 SDL_Texture *black_king_texture = nullptr;
 
-SDL_Texture *text_texture = nullptr;
-
 int square_width, square_heigh;
 
 SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square_heigh };
@@ -60,6 +58,16 @@ size_t dragged_piece = -1;
 Sint32 mouse_x = 0, mouse_y = 0;
 
 bool in_menu = true;
+
+struct menu_item
+{
+    string label;
+    SDL_Rect rect;
+    SDL_Texture *texture;
+    SDL_Texture *hl_texture;
+};
+
+vector<struct menu_item> menu_items;
 
 bool operator != (SDL_Rect l, SDL_Rect r)
 {
@@ -196,9 +204,6 @@ void clean_up()
     if(black_king_texture)
         SDL_DestroyTexture(black_king_texture);
 
-    if(text_texture)
-        SDL_DestroyTexture(text_texture);
-
     if(ren)
         SDL_DestroyRenderer(ren);
 
@@ -307,6 +312,10 @@ void send_move(struct move move, int fd)
 void process_sdl_mousebuttondown(SDL_Event& e, struct game& game)
 {
     // print_mouse_button_event(e);
+    if(in_menu)
+    {
+        return;
+    }
     bool found = false;
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
@@ -336,6 +345,8 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game)
 
 void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
 {
+    if(in_menu)
+        return;
     if(dragged_piece != (size_t)-1)
     {
         struct piece& piece = game.pieces[dragged_piece];
@@ -523,25 +534,60 @@ void initWindowIcon()
     SDL_SetWindowIcon(display, icon);
 }
 
+SDL_Texture *create_menu_item_texture(string label, SDL_Color color)
+{
+    // TODO Make this parametrable. Or we should be able to get the
+    // list of installed font. There might be a specific debian
+    // package to install as a dependency. 2- The point size must be
+    // adequate: how find to we find a correct value here?
+    TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSerif.ttf", 40);
+    if(!font)
+    {
+        fprintf(stderr, "TTF_OpenFont(): %s.\n", TTF_GetError());
+        exit_failure();
+    }
+
+    SDL_Surface *text_surface = TTF_RenderText_Blended(font, label.c_str(), color);
+    if(!text_surface)
+    {
+        fprintf(stderr, "TTF_RenderText_Solid(): %s.\n", TTF_GetError());
+        exit_failure();
+    }
+
+    TTF_CloseFont(font);
+    font = nullptr;
+
+    SDL_Texture *text_texture = SDL_CreateTextureFromSurface(ren, text_surface);
+    if(!text_texture)
+    {
+        fprintf(stderr, "SDL_CreateTextureFromSurface(): %s.\n", SDL_GetError());
+        exit_failure();
+    }
+
+    SDL_FreeSurface(text_surface);
+    return text_texture;
+}
+
 void paint_menu()
 {
     if(!in_menu)
         return;
-    SDL_Rect rect;
-    if(SDL_QueryTexture(text_texture, nullptr, nullptr,
-                        &rect.w, &rect.h) == -1)
-    {
-        fprintf(stderr, "SDL_QueryTexture(): %s.\n", SDL_GetError());
-        exit_failure();
-    }
 
-    rect.x = screenwidth/2 - rect.w/2;
-    rect.y = screenheigh/2 - rect.h/2;
-
-    if(SDL_RenderCopy(ren, text_texture, NULL, &rect) == -1)
+    for(auto menu_item : menu_items)
     {
-        fprintf(stderr, "SDL_RenderCopy(): %s.\n", SDL_GetError());
-        exit_failure();
+        SDL_Texture *text_texture = nullptr;
+        if(is_hitting_rect(menu_item.rect, mouse_x, mouse_y))
+            text_texture = menu_item.hl_texture;
+        else
+            text_texture = menu_item.texture;
+
+        assert(text_texture);
+
+        if(SDL_RenderCopy(ren, text_texture, NULL, &menu_item.rect) == -1)
+        {
+            fprintf(stderr, "SDL_RenderCopy(): %s.\n", SDL_GetError());
+            exit_failure();
+        }
     }
 }
 
@@ -566,37 +612,30 @@ void init_font()
         fprintf(stderr, "TTF_Init(): %s.\n", TTF_GetError());
         exit_failure();
     }
+}
 
-    // TODO Make this parametrable. Or we should be able to get the
-    // list of installed font. There might be a specific debian
-    // package to install as a dependency. 2- The point size must be
-    // adequate: how find to we find a correct value here?
-    TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSerif.ttf", 40);
-    if(!font)
+void init_menu_item()
+{
+    struct menu_item play_online_item = {
+        "play online",
+        { 0, 0, 0, 0},
+        create_menu_item_texture("play online", {255,255,255,0}),
+        create_menu_item_texture("play online", {255,0,0,0}),
+    };
+
+    menu_items.push_back(play_online_item);
+
+    for(auto& menu_item : menu_items)
     {
-        fprintf(stderr, "TTF_OpenFont(): %s.\n", TTF_GetError());
-        exit_failure();
+        if(SDL_QueryTexture(menu_item.texture, nullptr, nullptr,
+                            &menu_item.rect.w, &menu_item.rect.h) == -1)
+        {
+            fprintf(stderr, "SDL_QueryTexture(): %s.\n", SDL_GetError());
+            exit_failure();
+        }
+        menu_item.rect.x = screenwidth/2 - menu_item.rect.w/2;
+        menu_item.rect.y = screenheigh/2 - menu_item.rect.h/2;
     }
-
-    SDL_Color color={255,255,255,0};
-    SDL_Surface *text_surface = TTF_RenderText_Blended(font, "play online", color);
-    if(!text_surface)
-    {
-        fprintf(stderr, "TTF_RenderText_Solid(): %s.\n", TTF_GetError());
-        exit_failure();
-    }
-
-    TTF_CloseFont(font);
-    font = nullptr;
-
-    text_texture = SDL_CreateTextureFromSurface(ren, text_surface);
-    if(!text_texture)
-    {
-        fprintf(stderr, "SDL_CreateTextureFromSurface(): %s.\n", SDL_GetError());
-        exit_failure();
-    }
-
-    SDL_FreeSurface(text_surface);
 }
 
 void init_sdl()
@@ -821,6 +860,7 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
 {
     init_sdl();
     init_font();
+    init_menu_item();
 
     struct game game;
     game.pieces = initial_board;
@@ -862,6 +902,11 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
             }
         }
 
+        // TODO Make a function out of the following. post_evt_processing()?
+        if(in_menu)
+            SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
+        else
+            SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
 
         paint_screen(game);
     }
