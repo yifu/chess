@@ -214,29 +214,36 @@ void process_player_fd(int i, struct pollfd pollfd)
 
         int opponent_fd = -1;
         if(fd == current_game.white_fd)
-            opponent_fd = current_game.black_fd;
-        else if(fd == current_game.black_fd)
-            opponent_fd = current_game.white_fd;
-        else
-            assert(false);
-        assert(opponent_fd != -1);
-
-        struct game_evt_msg msg;
-        msg.msg_type = msg_type::game_evt_msg;
-        msg.game_evt_type = game_evt_type::opponent_resigned;
-        ssize_t n = send(opponent_fd, &msg, sizeof(msg), 0);
-        if(n == -1)
         {
-            perror("send()");
-            assert(false);
-            exit(EXIT_FAILURE);
+            opponent_fd = current_game.black_fd;
+        }
+        else if(fd == current_game.black_fd)
+        {
+            opponent_fd = current_game.white_fd;
         }
 
-        // TODO
-        // 1- Once closed, find every fd and set them to -1. Or change the fd with playerpos?
-        // 2- Check for the fd value and test it for -1 before calling send() or anything else.
+        if(opponent_fd != -1)
+        {
+            struct game_evt_msg msg;
+            msg.msg_type = msg_type::game_evt_msg;
+            msg.game_evt_type = game_evt_type::opponent_resigned;
+            ssize_t n = send(opponent_fd, &msg, sizeof(msg), 0);
+            if(n == -1)
+            {
+                perror("send()");
+                assert(false);
+                exit(EXIT_FAILURE);
+            }
+            waiting_list.push_back(opponent_fd);
+        }
+
         fds[i] = {-1,0,0};
-        waiting_list.push_back(opponent_fd);
+
+        auto end = remove(waiting_list.begin(), waiting_list.end(), fd);
+        waiting_list.erase(end, waiting_list.end());
+
+        current_game.white_fd = -1;
+        current_game.black_fd = -1;
     }
     else
     {
