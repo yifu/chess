@@ -332,7 +332,6 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game)
             dragged_piece = i;
             mouse_x = e.button.x;
             mouse_y = e.button.y;
-            SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
         }
     }
     // printf("found = %d.\n", found);
@@ -383,7 +382,6 @@ void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
         dragged_piece = -1;
         mouse_x = e.button.x;
         mouse_y = e.button.y;
-        SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
     }
 
 }
@@ -671,7 +669,6 @@ void init_sdl()
     init_textures();
 
     SDL_EventState(SDL_WINDOWEVENT, SDL_DISABLE);
-    SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
 }
 
 int init_network(string ip, string port)
@@ -901,12 +898,6 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
                 print_pollfd(pollfd);
             }
         }
-
-        // TODO Make a function out of the following. post_evt_processing()?
-        if(in_menu)
-            SDL_EventState(SDL_MOUSEMOTION, SDL_ENABLE);
-        else
-            SDL_EventState(SDL_MOUSEMOTION, SDL_DISABLE);
 
         paint_screen(game);
     }
