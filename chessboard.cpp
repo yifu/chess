@@ -313,9 +313,11 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game)
 {
     // print_mouse_button_event(e);
     if(in_menu)
-    {
         return;
-    }
+
+    if(game.cur_player == opponent(player_color))
+        return;
+
     bool found = false;
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
@@ -323,8 +325,6 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game)
         if(is_hitting_rect(rect, e.button.x, e.button.y))
         {
             if(game.pieces[i].color != player_color)
-                continue;
-            if(game.cur_player == opponent(player_color))
                 continue;
             if(game.pieces[i].is_captured)
                 continue;
