@@ -334,10 +334,9 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game)
             mouse_y = e.button.y;
         }
     }
-    // printf("found = %d.\n", found);
     if(found)
     {
-        // printf("dragged_piece pos = %lu.\n", dragged_piece);
+        // printf("process_sdl_mousebuttondown: dragged_piece pos = %lu.\n", dragged_piece);
         print_piece(game.pieces[dragged_piece]);
     }
 }
@@ -346,6 +345,7 @@ void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
 {
     if(in_menu)
         return;
+
     if(dragged_piece != (size_t)-1)
     {
         struct piece& piece = game.pieces[dragged_piece];
