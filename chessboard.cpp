@@ -540,7 +540,7 @@ SDL_Texture *create_menu_item_texture(string label, SDL_Color color)
     // list of installed font. There might be a specific debian
     // package to install as a dependency. 2- The point size must be
     // adequate: how find to we find a correct value here?
-    TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSerif.ttf", 40);
+    TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 40);
     if(!font)
     {
         fprintf(stderr, "TTF_OpenFont(): %s.\n", TTF_GetError());
