@@ -40,4 +40,4 @@ game.o: game.hpp game.cpp net_protocol.hpp
 net_protocol.o: net_protocol.hpp
 
 chessboard: utils.o game.o net_protocol.o
-server: utils.o game.o net_protocol.o
+server: game.o net_protocol.o
