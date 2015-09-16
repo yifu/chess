@@ -947,7 +947,7 @@ int main()
 
     thread t(sdl_evt_thread, pipefd[1]);
 
-    controller_thread("127.0.0.1", "55555", pipefd[0]);
+    controller_thread("195.154.72.36", "55555", pipefd[0]);
     printf("bye!\n");
 
     close(pipefd[1]);
