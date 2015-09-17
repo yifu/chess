@@ -11,7 +11,6 @@ CXXFLAGS=-Werror -Wall -Wextra -Wpedantic -ggdb -std=c++11 $(shell sdl2-config -
 CC=g++
 LDFLAGS=
 LOADLIBES=
-LDLIBS=$(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
 # From stackoverflow
 # [http://stackoverflow.com/questions/17052006/make-ldlibs-deprecated]:
 # "Non-library linker flags, such as -L, should go in the LDFLAGS
@@ -39,6 +38,8 @@ utils.o: utils.hpp utils.cpp
 game.o: game.hpp game.cpp net_protocol.hpp
 net_protocol.o: net_protocol.hpp
 
+chessboard: LDLIBS=$(shell sdl2-config --libs) -lSDL2_image -lSDL2_ttf
 chessboard: utils.o game.o net_protocol.o
-LDLIBS=
+
+server: LDLIBS=
 server: game.o net_protocol.o
