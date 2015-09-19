@@ -19,4 +19,10 @@ int main()
     result = to_uint64(end - beg);
     printf("result = %" PRIu64 ".\n", result);
     assert(result == 3000000001);
+
+    beg = {0,0};
+    end = {0,900};
+    result = to_uint64(beg+end);
+    printf("result = %" PRIu64 ".\n", result);
+    assert(result == 900);
 }

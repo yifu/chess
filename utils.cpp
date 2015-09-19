@@ -47,12 +47,27 @@ struct timespec operator - (struct timespec l, struct timespec r)
         result.tv_sec = l.tv_sec - r.tv_sec - 1;
         result.tv_nsec = l.tv_nsec;
         result.tv_nsec += (1000000000 - r.tv_nsec);
-        if(result.tv_nsec > 1000000000)
+        if(result.tv_nsec >= 1000000000)
         {
             result.tv_sec++;
             result.tv_nsec -= 1000000000;
         }
     }
     assert(result.tv_nsec <= 1000000000);
+    return result;
+}
+
+struct timespec operator + (struct timespec l, struct timespec r)
+{
+    struct timespec result;
+
+    result.tv_sec = l.tv_sec+r.tv_sec;
+    result.tv_nsec = l.tv_nsec+r.tv_nsec;
+    if(result.tv_nsec >= 1000000000)
+    {
+        result.tv_sec++;
+        result.tv_nsec -= 1000000000;
+    }
+    assert(result.tv_nsec < 1000000000);
     return result;
 }
