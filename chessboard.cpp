@@ -905,16 +905,16 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
             struct timespec curtime;
             clock_gettime(CLOCK_MONOTONIC, &curtime);
 
-            print_timespec(curtime);
-            print_timespec(anim_sprite.begin);
-            print_timespec(anim_sprite.end);
-            printf("(substract_time(curtime, anim_sprite.begin)) = %" PRIu64 ".\n", (substract_time(curtime, anim_sprite.begin)));
-            printf("(anim_sprite.dst.y = %d, anim_sprite.src.y = %d.\n", anim_sprite.dst.y, anim_sprite.src.y);
-            printf("(anim_sprite.dst.y - anim_sprite.src.y) = %d.\n", (anim_sprite.dst.y - anim_sprite.src.y));
-            printf("dy = %" PRIu64 ".\n", (substract_time(curtime, anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y)) / 4000000000);
+            // print_timespec(curtime);
+            // print_timespec(anim_sprite.begin);
+            // print_timespec(anim_sprite.end);
+            // printf("(substract_time(curtime, anim_sprite.begin)) = %" PRIu64 ".\n", (substract_time(curtime, anim_sprite.begin)));
+            // printf("(anim_sprite.dst.y = %d, anim_sprite.src.y = %d.\n", anim_sprite.dst.y, anim_sprite.src.y);
+            // printf("(anim_sprite.dst.y - anim_sprite.src.y) = %d.\n", (anim_sprite.dst.y - anim_sprite.src.y));
+            // printf("dy = %" PRIu64 ".\n", (substract_time(curtime, anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y)) / 4000000000);
 
-            anim_sprite.cur.x = anim_sprite.src.x + (substract_time(curtime, anim_sprite.begin) * (anim_sprite.dst.x - anim_sprite.src.x)) / 4000000000;
-            anim_sprite.cur.y = anim_sprite.src.y + (substract_time(curtime, anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y)) / 4000000000;
+            anim_sprite.cur.x = anim_sprite.src.x + to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.x - anim_sprite.src.x) / 4000000000;
+            anim_sprite.cur.y = anim_sprite.src.y + to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y) / 4000000000;
 
             if(curtime > anim_sprite.end)
             {

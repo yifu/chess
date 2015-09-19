@@ -21,7 +21,12 @@ void print_rect(SDL_Rect r)
            r.x, r.y, r.w, r.h);
 }
 
-uint64_t substract_time(struct timespec l, struct timespec r)
+uint64_t to_uint64(struct timespec t)
+{
+    return t.tv_sec * 1000000000 + t.tv_nsec;
+}
+
+struct timespec operator - (struct timespec l, struct timespec r)
 {
     assert(l.tv_sec > r.tv_sec ||
            (l.tv_sec == r.tv_sec && l.tv_nsec > r.tv_nsec));
@@ -30,19 +35,24 @@ uint64_t substract_time(struct timespec l, struct timespec r)
 
     // printf("l.tv_sec=%" PRIu64 ", r.tv_sec=%" PRIu64 ".\n", l.tv_sec, r.tv_sec);
 
-    uint64_t result = 0;
+    timespec result;
     if(l.tv_sec == r.tv_sec)
     {
-        result = l.tv_nsec - r.tv_nsec;
+        result.tv_sec = 0;
+        result.tv_nsec = l.tv_nsec - r.tv_nsec;
     }
     else
     {
         assert(l.tv_sec > r.tv_sec);
-        uint64_t sec = l.tv_sec - r.tv_sec - 1;
-        uint64_t nsec = 1000000000 * sec;
-        nsec += l.tv_nsec;
-        nsec += (1000000000 - r.tv_nsec);
-        result = nsec;
+        result.tv_sec = l.tv_sec - r.tv_sec - 1;
+        result.tv_nsec = l.tv_nsec;
+        result.tv_nsec += (1000000000 - r.tv_nsec);
+        if(result.tv_nsec > 1000000000)
+        {
+            result.tv_sec++;
+            result.tv_nsec -= 1000000000;
+        }
     }
+    assert(result.tv_nsec <= 1000000000);
     return result;
 }
