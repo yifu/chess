@@ -913,8 +913,8 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
             // printf("(anim_sprite.dst.y - anim_sprite.src.y) = %d.\n", (anim_sprite.dst.y - anim_sprite.src.y));
             // printf("dy = %" PRIu64 ".\n", (substract_time(curtime, anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y)) / 4000000000);
 
-            anim_sprite.cur.x = anim_sprite.src.x + to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.x - anim_sprite.src.x) / 4000000000;
-            anim_sprite.cur.y = anim_sprite.src.y + to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y) / 4000000000;
+            anim_sprite.cur.x = anim_sprite.src.x + to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.x - anim_sprite.src.x) / to_uint64(anim_sprite.end - anim_sprite.begin);
+            anim_sprite.cur.y = anim_sprite.src.y + to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y) / to_uint64(anim_sprite.end - anim_sprite.begin);
 
             if(curtime > anim_sprite.end)
             {
