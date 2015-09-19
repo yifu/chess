@@ -150,30 +150,6 @@ void print_mouse_button_event(SDL_Event e)
            e.button.y);
 }
 
-uint64_t substract_time(struct timespec l, struct timespec r)
-{
-    assert(l.tv_sec > r.tv_sec ||
-           (l.tv_sec == r.tv_sec && l.tv_nsec > r.tv_nsec));
-    assert(l.tv_nsec < 1000000000);
-    assert(r.tv_nsec < 1000000000);
-
-    uint64_t result = 0;
-    if(r.tv_sec == r.tv_sec)
-    {
-        result = l.tv_nsec - r.tv_nsec;
-    }
-    else
-    {
-        assert(l.tv_sec > r.tv_sec);
-        uint64_t sec = l.tv_sec - r.tv_sec;
-        uint64_t nsec = 1000000000 * sec;
-        nsec += l.tv_nsec;
-        nsec += (1000000000 - r.tv_nsec);
-        result = nsec;
-    }
-    return result;
-}
-
 void clean_up()
 {
     if(icon)
