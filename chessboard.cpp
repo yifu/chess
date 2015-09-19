@@ -74,6 +74,11 @@ bool operator != (SDL_Rect l, SDL_Rect r)
     return l.x != r.x || l.y != r.y || l.w != r.w || l.h != r.h;
 }
 
+bool operator > (struct timespec l, struct timespec r)
+{
+    return l.tv_sec > r.tv_sec || ((l.tv_sec == r.tv_sec) && (l.tv_nsec > r.tv_nsec));
+}
+
 struct square detect_square(Sint32 x, Sint32 y)
 {
     struct square result;
