@@ -4,3 +4,4 @@ core
 chessboard
 *.o
 /server
+/test

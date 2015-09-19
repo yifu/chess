@@ -26,13 +26,13 @@ LOADLIBES=
 .PHONY: debug release clean
 
 debug: CXXFLAGS += -DDEBUG
-debug: chessboard server
+debug: chessboard server test
 
 release: CXXFLAGS += -DNDEBUG -O3
-release: chessboard server
+release: chessboard server test
 
 clean:
-	rm server chessboard *.o
+	rm server chessboard test *.o
 
 utils.o: utils.hpp utils.cpp
 game.o: game.hpp game.cpp net_protocol.hpp
@@ -43,3 +43,6 @@ chessboard: utils.o game.o net_protocol.o
 
 server: LDLIBS=
 server: game.o net_protocol.o
+
+test: LDLIBS=
+test: test.o utils.o
