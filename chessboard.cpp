@@ -875,7 +875,7 @@ int compute_timeout()
 {
     if(anim_sprite.pos == (size_t)-1)
         return -1;
-    return 16;
+    return 1;
 }
 
 void controller_thread(string ip, string port, int sdl_evt_fd)
