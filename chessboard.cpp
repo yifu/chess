@@ -501,8 +501,8 @@ void paint_sprites(const struct game& game)
     {
         struct piece piece = game.pieces[anim_sprite.pos];
         assert(!piece.is_captured);
-        printf("Paint the animated sprite.\n");
-        print_rect(anim_sprite.cur);
+        // printf("Paint the animated sprite.\n");
+        // print_rect(anim_sprite.cur);
 
         SDL_Texture *texture = deduct_texture(piece);
         SDL_RenderCopy(ren, texture, nullptr, &anim_sprite.cur);
@@ -830,7 +830,8 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 struct timespec begin;
                 clock_gettime(CLOCK_MONOTONIC, &begin);
                 anim_sprite.begin = begin;
-                anim_sprite.end = {begin.tv_sec+4, begin.tv_nsec};
+                struct timespec duration = {0,600000000};
+                anim_sprite.end = begin+duration;
 
                 game = apply_move(game, move);
                 if(next_valid_moves(game).size() == 0)
