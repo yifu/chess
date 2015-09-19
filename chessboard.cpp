@@ -55,6 +55,13 @@ SDL_Rect out_of_view_rect = { -square_width, -square_heigh, square_width, square
 enum color player_color;
 
 size_t dragged_piece = -1;
+struct animated_sprite
+{
+    size_t pos = -1;
+    SDL_Rect cur, src, dst;
+    struct timespec begin, end;
+} anim_sprite;
+
 Sint32 mouse_x = 0, mouse_y = 0;
 
 bool in_menu = true;
@@ -470,6 +477,9 @@ void paint_sprites(const struct game& game)
         if(i == dragged_piece)
             continue;
 
+        if(i == anim_sprite.pos)
+            continue;
+
         SDL_Texture *texture = deduct_texture(piece);
         Uint8 r,g,b;
         if(in_menu)
@@ -487,10 +497,20 @@ void paint_sprites(const struct game& game)
         SDL_RenderCopy(ren, texture, nullptr, &rect);
     }
 
+    if(anim_sprite.pos != (size_t)-1)
+    {
+        struct piece piece = game.pieces[anim_sprite.pos];
+        assert(!piece.is_captured);
+        printf("Paint the animated sprite.\n");
+        print_rect(anim_sprite.cur);
+
+        SDL_Texture *texture = deduct_texture(piece);
+        SDL_RenderCopy(ren, texture, nullptr, &anim_sprite.cur);
+    }
+
     if(dragged_piece != (size_t)-1)
     {
         struct piece piece = game.pieces[dragged_piece];
-
         assert(!piece.is_captured);
 
         SDL_Texture *texture = deduct_texture(piece);
@@ -796,6 +816,22 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 move.src.col = msg.src_col;
                 move.dst.row = msg.dst_row;
                 move.dst.col = msg.dst_col;
+
+                anim_sprite.pos = -1;
+                for(size_t i = 0; i < game.pieces.size(); i++)
+                    if(game.pieces[i].square == move.src)
+                        anim_sprite.pos = i;
+                assert(anim_sprite.pos != (size_t)-1);
+
+                anim_sprite.cur = square2rect(move.src);
+                anim_sprite.src = square2rect(move.src);
+                anim_sprite.dst = square2rect(move.dst);
+
+                struct timespec begin;
+                clock_gettime(CLOCK_MONOTONIC, &begin);
+                anim_sprite.begin = begin;
+                anim_sprite.end = {begin.tv_sec+4, begin.tv_nsec};
+
                 game = apply_move(game, move);
                 if(next_valid_moves(game).size() == 0)
                 {
@@ -834,6 +870,13 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
     }
 }
 
+int compute_timeout()
+{
+    if(anim_sprite.pos == (size_t)-1)
+        return -1;
+    return 16;
+}
+
 void controller_thread(string ip, string port, int sdl_evt_fd)
 {
     init_sdl();
@@ -849,11 +892,37 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
     while(!quit)
     {
         struct pollfd fds[2] = {{sdl_evt_fd, POLLIN, 0},{fd, POLLIN, 0}};
-        int nfds = poll(&fds[0], arraysize(fds), -1/*timeout*/);
+        int timeout = compute_timeout();
+        int nfds = poll(&fds[0], arraysize(fds), timeout);
         if(nfds == -1)
         {
             perror("poll()");
             exit_failure();
+        }
+        if(nfds == 0)
+        {
+            // Timeout.
+            struct timespec curtime;
+            clock_gettime(CLOCK_MONOTONIC, &curtime);
+
+            print_timespec(curtime);
+            print_timespec(anim_sprite.begin);
+            print_timespec(anim_sprite.end);
+            printf("(substract_time(curtime, anim_sprite.begin)) = %" PRIu64 ".\n", (substract_time(curtime, anim_sprite.begin)));
+            printf("(anim_sprite.dst.y = %d, anim_sprite.src.y = %d.\n", anim_sprite.dst.y, anim_sprite.src.y);
+            printf("(anim_sprite.dst.y - anim_sprite.src.y) = %d.\n", (anim_sprite.dst.y - anim_sprite.src.y));
+            printf("dy = %" PRIu64 ".\n", (substract_time(curtime, anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y)) / 4000000000);
+
+            anim_sprite.cur.x = anim_sprite.src.x + (substract_time(curtime, anim_sprite.begin) * (anim_sprite.dst.x - anim_sprite.src.x)) / 4000000000;
+            anim_sprite.cur.y = anim_sprite.src.y + (substract_time(curtime, anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y)) / 4000000000;
+
+            if(curtime > anim_sprite.end)
+            {
+                print_timespec(curtime);
+                print_timespec(anim_sprite.end);
+                printf("End animation.\n");
+                anim_sprite.pos = -1;
+            }
         }
 
         // Refactor this for loop into process_all_fd().
