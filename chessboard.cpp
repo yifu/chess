@@ -504,8 +504,35 @@ void paint_sprites(const struct game& game)
         // printf("Paint the animated sprite.\n");
         // print_rect(anim_sprite.cur);
 
+        struct timespec curtime;
+        clock_gettime(CLOCK_MONOTONIC, &curtime);
+
+        int dx = (anim_sprite.dst.x > anim_sprite.src.x)? anim_sprite.dst.x-anim_sprite.src.x : anim_sprite.src.x-anim_sprite.dst.x;
+        int dy = (anim_sprite.dst.y > anim_sprite.src.y)? anim_sprite.dst.y-anim_sprite.src.y : anim_sprite.src.y-anim_sprite.dst.y;
+        int x = to_uint64(curtime - anim_sprite.begin) * dx / to_uint64(anim_sprite.end - anim_sprite.begin);
+        int y = to_uint64(curtime - anim_sprite.begin) * dy / to_uint64(anim_sprite.end - anim_sprite.begin);
+        x = ((anim_sprite.dst.x > anim_sprite.src.x)?x:-x);
+        y = ((anim_sprite.dst.y > anim_sprite.src.y)?y:-y);
+        anim_sprite.cur.x = anim_sprite.src.x+x;
+        anim_sprite.cur.y = anim_sprite.src.y+y;
+        printf("to_uint64(curtime - anim_sprite.begin) = %" PRIu64 ".\n", to_uint64(curtime - anim_sprite.begin));
+        printf("(anim_sprite.dst.x - anim_sprite.src.x) = %d.\n", (anim_sprite.dst.x - anim_sprite.src.x));
+        printf("to_uint64(anim_sprite.end - anim_sprite.begin) = %" PRIu64 ".\n", to_uint64(anim_sprite.end - anim_sprite.begin));
+        // printf("dx = %" PRIu64 ".\n", to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.x - anim_sprite.src.x) / to_uint64(anim_sprite.end - anim_sprite.begin));
+        print_rect(anim_sprite.src);
+        printf("dx=%d, dy=%d, x=%d, y=%d.\n", dx, dy, x, y);
+        print_rect(anim_sprite.cur);
+
         SDL_Texture *texture = deduct_texture(piece);
         SDL_RenderCopy(ren, texture, nullptr, &anim_sprite.cur);
+
+        if(curtime > anim_sprite.end)
+        {
+            print_timespec(curtime);
+            print_timespec(anim_sprite.end);
+            printf("End animation.\n");
+            anim_sprite.pos = -1;
+        }
     }
 
     if(dragged_piece != (size_t)-1)
@@ -830,7 +857,7 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 struct timespec begin;
                 clock_gettime(CLOCK_MONOTONIC, &begin);
                 anim_sprite.begin = begin;
-                struct timespec duration = {0,600000000};
+                struct timespec duration = {0,100000000};
                 anim_sprite.end = begin+duration;
 
                 game = apply_move(game, move);
@@ -903,19 +930,6 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
         if(nfds == 0)
         {
             // Timeout.
-            struct timespec curtime;
-            clock_gettime(CLOCK_MONOTONIC, &curtime);
-
-            anim_sprite.cur.x = anim_sprite.src.x + to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.x - anim_sprite.src.x) / to_uint64(anim_sprite.end - anim_sprite.begin);
-            anim_sprite.cur.y = anim_sprite.src.y + to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.y - anim_sprite.src.y) / to_uint64(anim_sprite.end - anim_sprite.begin);
-
-            if(curtime > anim_sprite.end)
-            {
-                print_timespec(curtime);
-                print_timespec(anim_sprite.end);
-                printf("End animation.\n");
-                anim_sprite.pos = -1;
-            }
         }
 
         // Refactor this for loop into process_all_fd().
