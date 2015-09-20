@@ -472,9 +472,9 @@ void paint_sprites(const struct game& game)
 
     if(curtime > anim_sprite.end)
     {
-        print_timespec(curtime);
-        print_timespec(anim_sprite.end);
-        printf("End animation.\n");
+        // print_timespec(curtime);
+        // print_timespec(anim_sprite.end);
+        // printf("End animation.\n");
         anim_sprite.pos = -1;
     }
 
