@@ -201,9 +201,9 @@ void process_move(int fd, struct move_msg *move_msg)
 
 void process_play_online(int fd, struct play_online_msg *play_online_msg __attribute__((unused)))
 {
-    struct players_msg msg;
+    struct players_list_msg msg;
     msg.msg_type = msg_type::players;
-    msg.players[0] = '\0';
+    msg.players_list[0] = '\0';
 
     for(auto player : player_list)
     {
@@ -214,11 +214,11 @@ void process_play_online(int fd, struct play_online_msg *play_online_msg __attri
         }
     }
 
-    // TODO Verify the size of the msg.players field.
+    // TODO Verify the size of the msg.players_list field.
     for(auto player : waiting_list)
     {
-        strcat(msg.players, player.username);
-        strcat(msg.players, ",");
+        strcat(msg.players_list, player.username);
+        strcat(msg.players_list, ",");
     }
 
     ssize_t n = send(fd, &msg, sizeof(msg), 0);

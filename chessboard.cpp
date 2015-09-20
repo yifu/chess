@@ -928,9 +928,9 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
             }
             case msg_type::players:
             {
-                struct players_msg msg = *(struct players_msg*)buf;
+                struct players_list_msg msg = *(struct players_list_msg*)buf;
                 assert(n == sizeof(msg));
-                printf("players = [%s].\n", msg.players);
+                printf("players = [%s].\n", msg.players_list);
                 fflush(stdout);
                 break;
             }

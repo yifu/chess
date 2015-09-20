@@ -62,10 +62,10 @@ struct play_online_msg
     enum msg_type msg_type;
 };
 
-struct players_msg
+struct players_list_msg
 {
     enum msg_type msg_type;
-    char players[100];
+    char players_list[100];
 };
 
 #pragma pack(pop)
