@@ -64,7 +64,14 @@ struct animated_sprite
 
 Sint32 mouse_x = 0, mouse_y = 0;
 
-bool in_menu = true;
+enum class screen_type
+{
+    menu,
+    game,
+    player_list,
+};
+
+enum screen_type scr_type = screen_type::menu;
 
 struct menu_item
 {
@@ -301,7 +308,7 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
 {
     // print_mouse_button_event(e);
     assert(fd != -1);
-    if(in_menu)
+    if(scr_type == screen_type::menu)
     {
         for(auto menu_item : menu_items)
         {
@@ -351,7 +358,7 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
 
 void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
 {
-    if(in_menu)
+    if(scr_type == screen_type::menu)
         return;
 
     if(dragged_piece != (size_t)-1)
@@ -410,8 +417,8 @@ void process_input_events(SDL_Event& e, struct game& game, int fd)
         printf("key down %d\n", e.key.keysym.sym);
         if(e.key.keysym.sym == SDLK_ESCAPE)
         {
-            in_menu = !in_menu;
-            printf("in_menu = %d.\n", in_menu);
+            scr_type = screen_type::menu;
+            printf("scr_type = %d.\n", scr_type);
         }
         break;
     }
@@ -467,7 +474,7 @@ void paint_chess_board()
                 b = 140;
             }
 
-            if(in_menu)
+            if(scr_type == screen_type::menu)
             {
                 r *= (100/255.0);
                 g *= (100/255.0);
@@ -513,7 +520,7 @@ void paint_sprites(const struct game& game)
 
         SDL_Texture *texture = deduct_texture(piece);
         Uint8 r,g,b;
-        if(in_menu)
+        if(scr_type == screen_type::menu)
             r = g = b = 100;
         else
             r = g = b = 255;
@@ -616,7 +623,7 @@ SDL_Texture *create_menu_item_texture(string label, SDL_Color color)
 
 void paint_menu()
 {
-    if(!in_menu)
+    if(scr_type != screen_type::menu)
         return;
 
     for(auto menu_item : menu_items)
