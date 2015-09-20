@@ -757,9 +757,12 @@ int init_network(string ip, string port)
         exit_failure();
     }
 
+    string username = "yves";
+    username += to_string(getpid());
+
     struct login login;
     login.msg_type = msg_type::login;
-    strncpy(login.username, "yves", sizeof(login.username));
+    strncpy(login.username, username.c_str(), sizeof(login.username));
     res = send(fd, &login, sizeof(login), 0);
     if(res == -1)
     {

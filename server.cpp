@@ -27,7 +27,29 @@ int listen_fd = -1;
 struct pollfd fds[100]; // TODO MAX FD PER PROCESSUS?
 size_t sz = 0;
 
-vector<int/*fd*/> waiting_list;
+struct player
+{
+    int fd;
+    char username[10];
+};
+
+bool operator == (struct player l, struct player r)
+{
+    return l.fd == r.fd && strncmp(l.username, r.username, sizeof(l.username)) == 0;
+}
+
+vector<struct player> player_list;
+vector<struct player> waiting_list;
+
+template<typename T>
+void appendUnique(vector<T>& vec, T nelt)
+{
+    for(auto elt : vec)
+        if(elt == nelt)
+            return;
+
+    vec.push_back(nelt);
+}
 
 enum color last_color = color::black;
 
@@ -39,43 +61,43 @@ struct srv_game
 
 struct srv_game current_game;
 
-void match_players()
-{
-    while(waiting_list.size() > 1)
-    {
-        int white_fd = waiting_list[0];
-        int black_fd = waiting_list[1];
+// void match_players()
+// {
+//     while(waiting_list.size() > 1)
+//     {
+//         int white_fd = waiting_list[0];
+//         int black_fd = waiting_list[1];
 
-        struct srv_game new_game;
-        new_game.game.pieces = initial_board;
-        new_game.white_fd = white_fd;
-        new_game.black_fd = black_fd;
-        current_game = new_game;
+//         struct srv_game new_game;
+//         new_game.game.pieces = initial_board;
+//         new_game.white_fd = white_fd;
+//         new_game.black_fd = black_fd;
+//         current_game = new_game;
 
-        struct new_game_msg new_game_msg;
-        new_game_msg.msg_type = msg_type::new_game_msg;
-        new_game_msg.player_color = color::white;
+//         struct new_game_msg new_game_msg;
+//         new_game_msg.msg_type = msg_type::new_game_msg;
+//         new_game_msg.player_color = color::white;
 
-        ssize_t n = send(white_fd, &new_game_msg, sizeof(new_game_msg),0);
-        if(n == -1)
-        {
-            perror("send()");
-            assert(false);
-            exit(EXIT_FAILURE);
-        }
+//         ssize_t n = send(white_fd, &new_game_msg, sizeof(new_game_msg),0);
+//         if(n == -1)
+//         {
+//             perror("send()");
+//             assert(false);
+//             exit(EXIT_FAILURE);
+//         }
 
-        new_game_msg.player_color = color::black;
-        n = send(black_fd, &new_game_msg, sizeof(new_game_msg),0);
-        if(n == -1)
-        {
-            perror("send()");
-            assert(false);
-            exit(EXIT_FAILURE);
-        }
+//         new_game_msg.player_color = color::black;
+//         n = send(black_fd, &new_game_msg, sizeof(new_game_msg),0);
+//         if(n == -1)
+//         {
+//             perror("send()");
+//             assert(false);
+//             exit(EXIT_FAILURE);
+//         }
 
-        waiting_list.erase(waiting_list.begin(), waiting_list.begin()+2);
-    }
-}
+//         waiting_list.erase(waiting_list.begin(), waiting_list.begin()+2);
+//     }
+// }
 
 void process_login(int fd, struct login *login)
 {
@@ -87,7 +109,11 @@ void process_login(int fd, struct login *login)
     struct login_ack login_ack;
     login_ack.msg_type = msg_type::login_ack;
 
-    waiting_list.push_back(fd);
+    struct player player;
+    player.fd = fd;
+    memcpy(player.username, login->username, sizeof(login->username));
+    static_assert(sizeof(player.username) == sizeof(login->username), "");
+    player_list.push_back(player);
 
     int n = send(fd, &login_ack, sizeof(login_ack), 0);
     if(n == -1)
@@ -96,6 +122,7 @@ void process_login(int fd, struct login *login)
         assert(false);
         exit(EXIT_FAILURE);
     }
+
     printf("login ack sent!\n");
     fflush(stdout);
 }
@@ -178,10 +205,19 @@ void process_play_online(int fd, struct play_online_msg *play_online_msg __attri
     msg.msg_type = msg_type::players;
     msg.players[0] = '\0';
 
-    // TODO Verify the size of the msg.players field.
-    for(int player : waiting_list)
+    for(auto player : player_list)
     {
-        strcat(msg.players, to_string(player).c_str());
+        if(player.fd == fd)
+        {
+            appendUnique(waiting_list, player);
+            break;
+        }
+    }
+
+    // TODO Verify the size of the msg.players field.
+    for(auto player : waiting_list)
+    {
+        strcat(msg.players, player.username);
         strcat(msg.players, ",");
     }
 
@@ -256,13 +292,9 @@ void process_player_fd(int i, struct pollfd pollfd)
                 assert(false);
                 exit(EXIT_FAILURE);
             }
-            waiting_list.push_back(opponent_fd);
         }
 
         fds[i] = {-1,0,0};
-
-        auto end = remove(waiting_list.begin(), waiting_list.end(), fd);
-        waiting_list.erase(end, waiting_list.end());
 
         current_game.white_fd = -1;
         current_game.black_fd = -1;
@@ -370,8 +402,6 @@ int main()
                 nfds--;
             }
         }
-
-        match_players();
 
         // remove(fds, fds+sz, fd);
         // sz--;
