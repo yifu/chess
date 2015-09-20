@@ -922,6 +922,10 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
         struct pollfd fds[2] = {{sdl_evt_fd, POLLIN, 0},{fd, POLLIN, 0}};
         int timeout = compute_timeout();
         int nfds = poll(&fds[0], arraysize(fds), timeout);
+
+        struct timespec beg;
+        clock_gettime(CLOCK_MONOTONIC, &beg);
+
         if(nfds == -1)
         {
             perror("poll()");
@@ -957,6 +961,10 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
         }
 
         paint_screen(game);
+
+        struct timespec end;
+        clock_gettime(CLOCK_MONOTONIC, &end);
+        // printf("Total time = %" PRIu64 ".\n", to_uint64(end-beg));
     }
     // TODO We must try to re-connect to the server.
     printf("controller thread: bye!\n");
