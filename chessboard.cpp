@@ -467,6 +467,17 @@ void paint_chess_board()
 
 void paint_sprites(const struct game& game)
 {
+    struct timespec curtime;
+    clock_gettime(CLOCK_MONOTONIC, &curtime);
+
+    if(curtime > anim_sprite.end)
+    {
+        print_timespec(curtime);
+        print_timespec(anim_sprite.end);
+        printf("End animation.\n");
+        anim_sprite.pos = -1;
+    }
+
     for(size_t i = 0; i < game.pieces.size(); i++)
     {
         struct piece piece = game.pieces[i];
@@ -504,9 +515,6 @@ void paint_sprites(const struct game& game)
         // printf("Paint the animated sprite.\n");
         // print_rect(anim_sprite.cur);
 
-        struct timespec curtime;
-        clock_gettime(CLOCK_MONOTONIC, &curtime);
-
         int dx = (anim_sprite.dst.x > anim_sprite.src.x)? anim_sprite.dst.x-anim_sprite.src.x : anim_sprite.src.x-anim_sprite.dst.x;
         int dy = (anim_sprite.dst.y > anim_sprite.src.y)? anim_sprite.dst.y-anim_sprite.src.y : anim_sprite.src.y-anim_sprite.dst.y;
         int x = to_uint64(curtime - anim_sprite.begin) * dx / to_uint64(anim_sprite.end - anim_sprite.begin);
@@ -525,14 +533,6 @@ void paint_sprites(const struct game& game)
 
         SDL_Texture *texture = deduct_texture(piece);
         SDL_RenderCopy(ren, texture, nullptr, &anim_sprite.cur);
-
-        if(curtime > anim_sprite.end)
-        {
-            print_timespec(curtime);
-            print_timespec(anim_sprite.end);
-            printf("End animation.\n");
-            anim_sprite.pos = -1;
-        }
     }
 
     if(dragged_piece != (size_t)-1)
