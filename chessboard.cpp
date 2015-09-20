@@ -834,7 +834,9 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
         {
             enum msg_type type = (enum msg_type)buf[0];
             printf("msg type=%d, len=%d.\n", type, n);
-            if(type == msg_type::move_msg)
+            switch(type)
+            {
+            case msg_type::move_msg:
             {
                 struct move_msg msg = *(struct move_msg*)buf;
                 assert(n == sizeof(msg));
@@ -868,14 +870,16 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                     else
                         printf("STALEMATE!!\n");
                 }
+                break;
             }
-            else if(type == msg_type::reject_move_msg)
+            case msg_type::reject_move_msg:
             {
                 printf("rejected msg.\n");
                 assert(n == sizeof(struct reject_move_msg));
                 game = last_game;
+                break;
             }
-            else if(type == msg_type::new_game_msg)
+            case msg_type::new_game_msg:
             {
                 struct new_game_msg msg = *(struct new_game_msg*)buf;
                 assert(n == sizeof(msg));
@@ -885,14 +889,18 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 game = new_game;
                 game.pieces = initial_board;
                 player_color = msg.player_color;
+                break;
             }
-            else if(type == msg_type::game_evt_msg)
+            case msg_type::game_evt_msg:
             {
                 printf("Opponent resigned.\n");
+                break;
             }
-            else
+            default:
             {
                 assert(false);
+                break;
+            }
             }
         }
     }
