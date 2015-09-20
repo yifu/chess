@@ -11,6 +11,8 @@ enum class msg_type : uint8_t
     reject_move_msg = 0x04,
     new_game_msg = 0x05,
     game_evt_msg = 0x06,
+    play_online = 0x07,
+    players = 0x08,
 };
 
 enum class game_evt_type : uint8_t
@@ -53,6 +55,17 @@ struct game_evt_msg
 {
     enum msg_type msg_type;
     enum game_evt_type game_evt_type;
+};
+
+struct play_online_msg
+{
+    enum msg_type msg_type;
+};
+
+struct players_msg
+{
+    enum msg_type msg_type;
+    char players[100];
 };
 
 #pragma pack(pop)

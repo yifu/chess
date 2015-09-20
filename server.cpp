@@ -172,6 +172,28 @@ void process_move(int fd, struct move_msg *move_msg)
     }
 }
 
+void process_play_online(int fd, struct play_online_msg *play_online_msg __attribute__((unused)))
+{
+    struct players_msg msg;
+    msg.msg_type = msg_type::players;
+    msg.players[0] = '\0';
+
+    // TODO Verify the size of the msg.players field.
+    for(int player : waiting_list)
+    {
+        strcat(msg.players, to_string(player).c_str());
+        strcat(msg.players, ",");
+    }
+
+    ssize_t n = send(fd, &msg, sizeof(msg), 0);
+    if(n == -1)
+    {
+        perror("send()");
+        assert(false);
+        exit(EXIT_FAILURE);
+    }
+}
+
 void process_listen_fd(int fd)
 {
     // TODO Read man page for accept4(). And possible errors.
@@ -256,6 +278,9 @@ void process_player_fd(int i, struct pollfd pollfd)
             break;
         case msg_type::move_msg:
             process_move(fd, (struct move_msg*)buf);
+            break;
+        case msg_type::play_online:
+            process_play_online(fd, (struct play_online_msg*)buf);
             break;
         default:
             printf("Unknown msg type=%d.\n", type);

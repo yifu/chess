@@ -297,11 +297,31 @@ void send_move(struct move move, int fd)
     }
 }
 
-void process_sdl_mousebuttondown(SDL_Event& e, struct game& game)
+void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
 {
     // print_mouse_button_event(e);
+    assert(fd != -1);
     if(in_menu)
+    {
+        for(auto menu_item : menu_items)
+        {
+            if(is_hitting_rect(menu_item.rect, e.button.x, e.button.y))
+            {
+                if(menu_item.label == "play online")
+                {
+                    struct play_online_msg msg;
+                    msg.msg_type = msg_type::play_online;
+                    ssize_t n = write(fd, &msg, sizeof(msg));
+                    if(n == -1)
+                    {
+                        perror("write()");
+                        exit_failure();
+                    }
+                }
+            }
+        }
         return;
+    }
 
     if(game.cur_player == opponent(player_color))
         return;
@@ -403,7 +423,7 @@ void process_input_events(SDL_Event& e, struct game& game, int fd)
     }
     case SDL_MOUSEBUTTONDOWN:
     {
-        process_sdl_mousebuttondown(e, game);
+        process_sdl_mousebuttondown(e, game, fd);
         break;
     }
     case SDL_MOUSEBUTTONUP:
@@ -894,6 +914,14 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
             case msg_type::game_evt_msg:
             {
                 printf("Opponent resigned.\n");
+                break;
+            }
+            case msg_type::players:
+            {
+                struct players_msg msg = *(struct players_msg*)buf;
+                assert(n == sizeof(msg));
+                printf("players = [%s].\n", msg.players);
+                fflush(stdout);
                 break;
             }
             default:
