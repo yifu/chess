@@ -10,6 +10,7 @@
 #include <arpa/inet.h>
 #include <thread>
 #include <poll.h>
+#include <sstream>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -68,7 +69,7 @@ enum class screen_type
 {
     menu,
     game,
-    player_list,
+    players_list,
 };
 
 enum screen_type scr_type = screen_type::menu;
@@ -82,6 +83,8 @@ struct menu_item
 };
 
 vector<struct menu_item> menu_items;
+
+vector<string> players_list;
 
 bool operator != (SDL_Rect l, SDL_Rect r)
 {
@@ -310,6 +313,7 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
     assert(fd != -1);
     if(scr_type == screen_type::menu)
     {
+        printf("process_sdl_mousebuttondown(): menu.\n");
         for(auto menu_item : menu_items)
         {
             if(is_hitting_rect(menu_item.rect, e.button.x, e.button.y))
@@ -474,7 +478,7 @@ void paint_chess_board()
                 b = 140;
             }
 
-            if(scr_type == screen_type::menu)
+            if(scr_type != screen_type::game)
             {
                 r *= (100/255.0);
                 g *= (100/255.0);
@@ -520,7 +524,7 @@ void paint_sprites(const struct game& game)
 
         SDL_Texture *texture = deduct_texture(piece);
         Uint8 r,g,b;
-        if(scr_type == screen_type::menu)
+        if(scr_type != screen_type::game)
             r = g = b = 100;
         else
             r = g = b = 255;
@@ -623,23 +627,51 @@ SDL_Texture *create_menu_item_texture(string label, SDL_Color color)
 
 void paint_menu()
 {
-    if(scr_type != screen_type::menu)
-        return;
-
-    for(auto menu_item : menu_items)
+    if(scr_type == screen_type::menu)
     {
-        SDL_Texture *text_texture = nullptr;
-        if(is_hitting_rect(menu_item.rect, mouse_x, mouse_y))
-            text_texture = menu_item.hl_texture;
-        else
-            text_texture = menu_item.texture;
-
-        assert(text_texture);
-
-        if(SDL_RenderCopy(ren, text_texture, NULL, &menu_item.rect) == -1)
+        printf("Paint menu.\n");
+        for(auto menu_item : menu_items)
         {
-            fprintf(stderr, "SDL_RenderCopy(): %s.\n", SDL_GetError());
-            exit_failure();
+            SDL_Texture *text_texture = nullptr;
+            if(is_hitting_rect(menu_item.rect, mouse_x, mouse_y))
+                text_texture = menu_item.hl_texture;
+            else
+                text_texture = menu_item.texture;
+
+            assert(text_texture);
+
+            if(SDL_RenderCopy(ren, text_texture, NULL, &menu_item.rect) == -1)
+            {
+                fprintf(stderr, "SDL_RenderCopy(): %s.\n", SDL_GetError());
+                exit_failure();
+            }
+        }
+    }
+    else if(scr_type == screen_type::players_list)
+    {
+        printf("Paint players list.\n");
+        for(size_t i = 0; i < players_list.size(); i++)
+        {
+            string username = players_list[i];
+            printf("Paint %s.\n", username.c_str());
+            SDL_Texture *text_texture = create_menu_item_texture(username, {255,255,255,0});
+            assert(text_texture);
+
+            SDL_Rect rect;
+            if(SDL_QueryTexture(text_texture, nullptr, nullptr,
+                                &rect.w, &rect.h) == -1)
+            {
+                fprintf(stderr, "SDL_QueryTexture(): %s.\n", SDL_GetError());
+                exit_failure();
+            }
+            rect.x = screenwidth/2 - rect.w/2;
+            rect.y = (screenheigh/2 - rect.h/2)+(i*rect.h);
+
+            if(SDL_RenderCopy(ren, text_texture, NULL, &rect) == -1)
+            {
+                fprintf(stderr, "SDL_RenderCopy(): %s.\n", SDL_GetError());
+                exit_failure();
+            }
         }
     }
 }
@@ -930,8 +962,15 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
             {
                 struct players_list_msg msg = *(struct players_list_msg*)buf;
                 assert(n == sizeof(msg));
-                printf("players = [%s].\n", msg.players_list);
-                fflush(stdout);
+                // printf("players = [%s].\n", msg.players_list);
+                // fflush(stdout);
+
+                istringstream iss(msg.players_list);
+                string username;
+                while(getline(iss, username, ','))
+                    players_list.push_back(username);
+
+                scr_type = screen_type::players_list;
                 break;
             }
             default:
