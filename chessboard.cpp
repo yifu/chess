@@ -388,6 +388,26 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
         }
         return;
     }
+    else if(scr_type == screen_type::players_list)
+    {
+        printf("process_sdl_mousebuttondown(): player list.\n");
+        for(auto menu_item : menu_items)
+        {
+            if(is_hitting_rect(menu_item.rect, e.button.x, e.button.y))
+            {
+                printf("send request for game to %s.", menu_item.label.c_str());
+                struct request_for_game msg;
+                msg.msg_type = msg_type::request_for_game;
+                strcpy(msg.opponent_username, menu_item.label.c_str());
+                ssize_t n = write(fd, &msg, sizeof(msg));
+                if(n == -1)
+                {
+                    perror("write()");
+                    exit_failure();
+                }
+            }
+        }
+    }
 
     if(game.cur_player == opponent(player_color))
         return;
@@ -670,6 +690,8 @@ void paint_menu()
             }
         }
         break;
+    case screen_type::game:
+        break;
     default:
         printf("Not implemented yet.");
         break;
@@ -933,6 +955,7 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 game = new_game;
                 game.pieces = initial_board;
                 player_color = msg.player_color;
+                scr_type = screen_type::game;
                 break;
             }
             case msg_type::game_evt_msg:

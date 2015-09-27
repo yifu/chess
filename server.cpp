@@ -217,6 +217,8 @@ void process_play_online(int fd, struct play_online_msg *play_online_msg __attri
     // TODO Verify the size of the msg.players_list field.
     for(auto player : waiting_list)
     {
+        if(player.fd == fd)
+            continue;
         strcat(msg.players_list, player.username);
         strcat(msg.players_list, ",");
     }
@@ -227,6 +229,42 @@ void process_play_online(int fd, struct play_online_msg *play_online_msg __attri
         perror("send()");
         assert(false);
         exit(EXIT_FAILURE);
+    }
+}
+
+void process_request_for_game(int fd, struct request_for_game *request_for_game_msg)
+{
+    for(auto player : waiting_list)
+    {
+        if(strncmp(player.username, request_for_game_msg->opponent_username,
+                   sizeof(player.username)) == 0)
+        {
+            struct new_game_msg msg;
+            msg.msg_type = msg_type::new_game_msg;
+            msg.player_color = color::white;
+            ssize_t n = send(fd, &msg, sizeof(msg), 0);
+            if(n == -1)
+            {
+                perror("send()");
+                assert(false);
+                exit(EXIT_FAILURE);
+            }
+
+            msg.player_color = color::black;
+            n = send(player.fd, &msg, sizeof(msg), 0);
+            if(n == -1)
+            {
+                perror("send()");
+                assert(false);
+                exit(EXIT_FAILURE);
+            }
+
+            struct srv_game new_game;
+            new_game.game.pieces = initial_board;
+            new_game.white_fd = fd;
+            new_game.black_fd = player.fd;
+            current_game = new_game;
+        }
     }
 }
 
@@ -313,6 +351,9 @@ void process_player_fd(int i, struct pollfd pollfd)
             break;
         case msg_type::play_online:
             process_play_online(fd, (struct play_online_msg*)buf);
+            break;
+        case msg_type::request_for_game:
+            process_request_for_game(fd, (struct request_for_game*)buf);
             break;
         default:
             printf("Unknown msg type=%d.\n", type);

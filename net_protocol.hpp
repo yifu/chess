@@ -13,6 +13,7 @@ enum class msg_type : uint8_t
     game_evt_msg = 0x06,
     play_online = 0x07,
     players = 0x08,
+    request_for_game = 0x09,
 };
 
 enum class game_evt_type : uint8_t
@@ -66,6 +67,12 @@ struct players_list_msg
 {
     enum msg_type msg_type;
     char players_list[100];
+};
+
+struct request_for_game
+{
+    enum msg_type msg_type;
+    char opponent_username[20];
 };
 
 #pragma pack(pop)
