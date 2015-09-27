@@ -368,7 +368,7 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
     assert(fd != -1);
     if(scr_type == screen_type::menu)
     {
-        printf("process_sdl_mousebuttondown(): menu.\n");
+        // printf("process_sdl_mousebuttondown(): menu.\n");
         for(auto menu_item : menu_items)
         {
             if(is_hitting_rect(menu_item.rect, e.button.x, e.button.y))
@@ -648,8 +648,10 @@ void initWindowIcon()
 
 void paint_menu()
 {
-    if(scr_type == screen_type::menu)
+    switch(scr_type)
     {
+    case screen_type::menu:
+    case screen_type::players_list:
         // printf("Paint menu.\n");
         for(auto menu_item : menu_items)
         {
@@ -667,29 +669,10 @@ void paint_menu()
                 exit_failure();
             }
         }
-    }
-    else if(scr_type == screen_type::players_list)
-    {
-        for(size_t i = 0; i < players_list.size(); i++)
-        {
-            string username = players_list[i];
-            struct menu_item menu_item(username);
-
-            // rect.x = screenwidth/2 - rect.w/2;
-            menu_item.rect.y = (screenheigh/2 - menu_item.rect.h/2)+(i*menu_item.rect.h);
-
-            SDL_Texture *text_texture = nullptr;
-            if(is_hitting_rect(menu_item.rect, mouse_x, mouse_y))
-                text_texture = menu_item.hl_texture;
-            else
-                text_texture = menu_item.texture;
-
-            if(SDL_RenderCopy(ren, text_texture, NULL, &menu_item.rect) == -1)
-            {
-                fprintf(stderr, "SDL_RenderCopy(): %s.\n", SDL_GetError());
-                exit_failure();
-            }
-        }
+        break;
+    default:
+        printf("Not implemented yet.");
+        break;
     }
 }
 
@@ -968,6 +951,17 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 string username;
                 while(getline(iss, username, ','))
                     players_list.push_back(username);
+
+                menu_items.clear();
+                for(size_t i = 0; i < players_list.size(); i++)
+                {
+                    // TODO Remove the players_list.
+                    string username = players_list[i];
+                    struct menu_item menu_item(username);
+                    // rect.x = screenwidth/2 - rect.w/2;
+                    menu_item.rect.y = (screenheigh/2 - menu_item.rect.h/2)+(i*menu_item.rect.h);
+                    menu_items.push_back(menu_item);
+                }
 
                 scr_type = screen_type::players_list;
                 break;
