@@ -74,13 +74,114 @@ enum class screen_type
 
 enum screen_type scr_type = screen_type::menu;
 
+void clean_up()
+{
+    if(icon)
+        SDL_FreeSurface(icon);
+    if(white_pawn_texture)
+        SDL_DestroyTexture(white_pawn_texture);
+    if(white_rook_texture)
+        SDL_DestroyTexture(white_rook_texture);
+    if(white_knight_texture)
+        SDL_DestroyTexture(white_knight_texture);
+    if(white_bishop_texture)
+        SDL_DestroyTexture(white_bishop_texture);
+    if(white_queen_texture)
+        SDL_DestroyTexture(white_queen_texture);
+    if(white_king_texture)
+        SDL_DestroyTexture(white_king_texture);
+
+    if(black_pawn_texture)
+        SDL_DestroyTexture(black_pawn_texture);
+    if(black_rook_texture)
+        SDL_DestroyTexture(black_rook_texture);
+    if(black_knight_texture)
+        SDL_DestroyTexture(black_knight_texture);
+    if(black_bishop_texture)
+        SDL_DestroyTexture(black_bishop_texture);
+    if(black_queen_texture)
+        SDL_DestroyTexture(black_queen_texture);
+    if(black_king_texture)
+        SDL_DestroyTexture(black_king_texture);
+
+    if(ren)
+        SDL_DestroyRenderer(ren);
+
+    if(display)
+        SDL_DestroyWindow(display);
+    SDL_Quit();
+    IMG_Quit();
+    TTF_Quit();
+}
+
+void exit_failure()
+{
+    clean_up();
+    exit(EXIT_FAILURE);
+}
+
 struct menu_item
 {
     string label;
     SDL_Rect rect;
     SDL_Texture *texture;
     SDL_Texture *hl_texture;
+
+    menu_item(string label);
+private:
+    SDL_Texture *create_texture(string label, SDL_Color color);
 };
+
+menu_item::menu_item(string l) :
+    label(l)
+{
+    texture = create_texture(label, {255,255,255,0});
+    hl_texture = create_texture(label, {255,0,0,0});
+
+    if(SDL_QueryTexture(texture, nullptr, nullptr,
+                        &rect.w, &rect.h) == -1)
+    {
+        fprintf(stderr, "SDL_QueryTexture(): %s.\n", SDL_GetError());
+        exit_failure();
+    }
+
+    rect.x = screenwidth/2 - rect.w/2;
+    rect.y = screenheigh/2 - rect.h/2;
+}
+
+SDL_Texture *menu_item::create_texture(string label, SDL_Color color)
+{
+    // TODO Make this parametrable. Or we should be able to get the
+    // list of installed font. There might be a specific debian
+    // package to install as a dependency. 2- The point size must be
+    // adequate: how find to we find a correct value here?
+    TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 40);
+    if(!font)
+    {
+        fprintf(stderr, "TTF_OpenFont(): %s.\n", TTF_GetError());
+        exit_failure();
+    }
+
+    SDL_Surface *text_surface = TTF_RenderText_Blended(font, label.c_str(), color);
+    if(!text_surface)
+    {
+        fprintf(stderr, "TTF_RenderText_Solid(): %s.\n", TTF_GetError());
+        exit_failure();
+    }
+
+    TTF_CloseFont(font);
+    font = nullptr;
+
+    SDL_Texture *text_texture = SDL_CreateTextureFromSurface(ren, text_surface);
+    if(!text_texture)
+    {
+        fprintf(stderr, "SDL_CreateTextureFromSurface(): %s.\n", SDL_GetError());
+        exit_failure();
+    }
+
+    SDL_FreeSurface(text_surface);
+    return text_texture;
+}
 
 vector<struct menu_item> menu_items;
 
@@ -170,52 +271,6 @@ void print_mouse_button_event(SDL_Event e)
            e.button.clicks,
            e.button.x,
            e.button.y);
-}
-
-void clean_up()
-{
-    if(icon)
-        SDL_FreeSurface(icon);
-    if(white_pawn_texture)
-        SDL_DestroyTexture(white_pawn_texture);
-    if(white_rook_texture)
-        SDL_DestroyTexture(white_rook_texture);
-    if(white_knight_texture)
-        SDL_DestroyTexture(white_knight_texture);
-    if(white_bishop_texture)
-        SDL_DestroyTexture(white_bishop_texture);
-    if(white_queen_texture)
-        SDL_DestroyTexture(white_queen_texture);
-    if(white_king_texture)
-        SDL_DestroyTexture(white_king_texture);
-
-    if(black_pawn_texture)
-        SDL_DestroyTexture(black_pawn_texture);
-    if(black_rook_texture)
-        SDL_DestroyTexture(black_rook_texture);
-    if(black_knight_texture)
-        SDL_DestroyTexture(black_knight_texture);
-    if(black_bishop_texture)
-        SDL_DestroyTexture(black_bishop_texture);
-    if(black_queen_texture)
-        SDL_DestroyTexture(black_queen_texture);
-    if(black_king_texture)
-        SDL_DestroyTexture(black_king_texture);
-
-    if(ren)
-        SDL_DestroyRenderer(ren);
-
-    if(display)
-        SDL_DestroyWindow(display);
-    SDL_Quit();
-    IMG_Quit();
-    TTF_Quit();
-}
-
-void exit_failure()
-{
-    clean_up();
-    exit(EXIT_FAILURE);
 }
 
 SDL_Texture *init_texture(string filename)
@@ -591,45 +646,11 @@ void initWindowIcon()
     SDL_SetWindowIcon(display, icon);
 }
 
-SDL_Texture *create_menu_item_texture(string label, SDL_Color color)
-{
-    // TODO Make this parametrable. Or we should be able to get the
-    // list of installed font. There might be a specific debian
-    // package to install as a dependency. 2- The point size must be
-    // adequate: how find to we find a correct value here?
-    TTF_Font *font = TTF_OpenFont("/usr/share/fonts/truetype/freefont/FreeSans.ttf", 40);
-    if(!font)
-    {
-        fprintf(stderr, "TTF_OpenFont(): %s.\n", TTF_GetError());
-        exit_failure();
-    }
-
-    SDL_Surface *text_surface = TTF_RenderText_Blended(font, label.c_str(), color);
-    if(!text_surface)
-    {
-        fprintf(stderr, "TTF_RenderText_Solid(): %s.\n", TTF_GetError());
-        exit_failure();
-    }
-
-    TTF_CloseFont(font);
-    font = nullptr;
-
-    SDL_Texture *text_texture = SDL_CreateTextureFromSurface(ren, text_surface);
-    if(!text_texture)
-    {
-        fprintf(stderr, "SDL_CreateTextureFromSurface(): %s.\n", SDL_GetError());
-        exit_failure();
-    }
-
-    SDL_FreeSurface(text_surface);
-    return text_texture;
-}
-
 void paint_menu()
 {
     if(scr_type == screen_type::menu)
     {
-        printf("Paint menu.\n");
+        // printf("Paint menu.\n");
         for(auto menu_item : menu_items)
         {
             SDL_Texture *text_texture = nullptr;
@@ -649,25 +670,21 @@ void paint_menu()
     }
     else if(scr_type == screen_type::players_list)
     {
-        printf("Paint players list.\n");
         for(size_t i = 0; i < players_list.size(); i++)
         {
             string username = players_list[i];
-            printf("Paint %s.\n", username.c_str());
-            SDL_Texture *text_texture = create_menu_item_texture(username, {255,255,255,0});
-            assert(text_texture);
+            struct menu_item menu_item(username);
 
-            SDL_Rect rect;
-            if(SDL_QueryTexture(text_texture, nullptr, nullptr,
-                                &rect.w, &rect.h) == -1)
-            {
-                fprintf(stderr, "SDL_QueryTexture(): %s.\n", SDL_GetError());
-                exit_failure();
-            }
-            rect.x = screenwidth/2 - rect.w/2;
-            rect.y = (screenheigh/2 - rect.h/2)+(i*rect.h);
+            // rect.x = screenwidth/2 - rect.w/2;
+            menu_item.rect.y = (screenheigh/2 - menu_item.rect.h/2)+(i*menu_item.rect.h);
 
-            if(SDL_RenderCopy(ren, text_texture, NULL, &rect) == -1)
+            SDL_Texture *text_texture = nullptr;
+            if(is_hitting_rect(menu_item.rect, mouse_x, mouse_y))
+                text_texture = menu_item.hl_texture;
+            else
+                text_texture = menu_item.texture;
+
+            if(SDL_RenderCopy(ren, text_texture, NULL, &menu_item.rect) == -1)
             {
                 fprintf(stderr, "SDL_RenderCopy(): %s.\n", SDL_GetError());
                 exit_failure();
@@ -701,26 +718,8 @@ void init_font()
 
 void init_menu_item()
 {
-    struct menu_item play_online_item = {
-        "play online",
-        { 0, 0, 0, 0},
-        create_menu_item_texture("play online", {255,255,255,0}),
-        create_menu_item_texture("play online", {255,0,0,0}),
-    };
-
+    struct menu_item play_online_item("play online");
     menu_items.push_back(play_online_item);
-
-    for(auto& menu_item : menu_items)
-    {
-        if(SDL_QueryTexture(menu_item.texture, nullptr, nullptr,
-                            &menu_item.rect.w, &menu_item.rect.h) == -1)
-        {
-            fprintf(stderr, "SDL_QueryTexture(): %s.\n", SDL_GetError());
-            exit_failure();
-        }
-        menu_item.rect.x = screenwidth/2 - menu_item.rect.w/2;
-        menu_item.rect.y = screenheigh/2 - menu_item.rect.h/2;
-    }
 }
 
 void init_sdl()
