@@ -197,23 +197,6 @@ bool operator > (struct timespec l, struct timespec r)
     return l.tv_sec > r.tv_sec || ((l.tv_sec == r.tv_sec) && (l.tv_nsec > r.tv_nsec));
 }
 
-struct square detect_square(Sint32 x, Sint32 y)
-{
-    struct square result;
-    result.row = y / square_heigh;
-    result.col = x / square_width;
-    if(player_color == color::white)
-    {
-        result.row = 8 - result.row - 1;
-        result.col = 8 - result.col - 1;
-    }
-
-    assert(result.row >= 0 && result.row <= 7);
-    assert(result.col >= 0 && result.col <= 7);
-    print_square(result);
-    return result;
-}
-
 SDL_Rect square2rect(struct square square)
 {
     assert(square.row >= 0 && square.row <= 7);
@@ -221,7 +204,6 @@ SDL_Rect square2rect(struct square square)
     if(player_color == color::white)
     {
         square.row = 8 - square.row - 1;
-        square.col = 8 - square.col - 1;
     }
 
     SDL_Rect rect;
@@ -230,6 +212,28 @@ SDL_Rect square2rect(struct square square)
     rect.w = square_width;
     rect.h = square_heigh;
     return rect;
+}
+
+struct square detect_square(Sint32 x, Sint32 y)
+{
+    for(int i = 0; i < 8; i++)
+    {
+        for(int j = 0; j < 8; j++)
+        {
+            struct square square = {i,j};
+            SDL_Rect rect = square2rect(square);
+            if(is_hitting_rect(rect, x, y))
+            {
+                print_square(square);
+                return square;
+            }
+        }
+    }
+
+    assert(false);
+    struct square result = {-1,-1};
+    print_square(result);
+    return result;
 }
 
 struct sprite
