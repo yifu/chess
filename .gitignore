@@ -5,3 +5,4 @@ chessboard
 *.o
 /server
 /test
+debug-*.txt

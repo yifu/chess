@@ -6,6 +6,12 @@
 
 using namespace std;
 
+#include <sys/types.h>
+#include <unistd.h>
+
+string filename = string("debug-") + to_string(getpid()) + ".txt";
+FILE *dbg = fopen(filename.c_str(), "w");
+
 array<struct piece, 32> initial_board = {{
     {color::white, type::pawn, {1, 0}, false},
     {color::white, type::pawn, {1, 1}, false},
@@ -41,6 +47,17 @@ array<struct piece, 32> initial_board = {{
     {color::black, type::queen, {7, 3}, false},
     {color::black, type::king, {7, 4}, false},
 }};
+
+struct square mk_square(int row, int col)
+{
+    struct square s {row, col};
+    return s;
+}
+
+bool operator != (struct square l, struct square r)
+{
+    return l.row != r.row || l.col != r.col;
+}
 
 bool operator == (struct square l, struct square r)
 {
@@ -81,38 +98,38 @@ const char *type2string(enum type t)
 // TODO Overload all that?
 void print_square(struct square square)
 {
-    printf("square={row=%d,col=%d}\n", square.row, square.col);
+    fprintf(dbg, "square={row=%d,col=%d}\n", square.row, square.col);
 }
 
 void print_move(struct move move)
 {
-    printf("move={src={%d,%d},dst={%d,%d}}\n",
+    fprintf(dbg, "move={src={%d,%d},dst={%d,%d}}\n",
 	   move.src.row, move.src.col,
 	   move.dst.row, move.src.col);
 }
 
 void print_game(struct game game)
 {
-    printf("game={cur_player=%s, moves={",
+    fprintf(dbg, "game={cur_player=%s, moves={",
            color2string(game.cur_player));
     for(struct move move : game.moves)
     {
         print_move(move);
-        printf(",");
+        fprintf(dbg, ",");
     }
 
-    printf("}, pieces={");
+    fprintf(dbg, "}, pieces={");
     for(struct piece piece : game.pieces)
     {
         print_piece(piece);
-        printf(",");
+        fprintf(dbg, ",");
     }
-    printf("}}\n");
+    fprintf(dbg, "}}\n");
 }
 
 void print_piece(struct piece piece)
 {
-    printf("piece={color=%s, type=%s, square={%d,%d}, is_captured=%d}\n",
+    fprintf(dbg, "piece={color=%s, type=%s, square={%d,%d}, is_captured=%d}\n",
            color2string(piece.color),
            type2string(piece.type),
            piece.square.row,
@@ -221,8 +238,8 @@ vector<struct move> generate_pawn_capturing_move(struct game game, size_t pos)
         if(captured_piece.color == game.cur_player)
             continue;
 
-        // printf("src square = "); print_square(src);
-        // printf("dst square = "); print_square(dst);
+        // fprintf(dbg, "src square = "); print_square(src);
+        // fprintf(dbg, "dst square = "); print_square(dst);
 
         struct move move = {src, dst};
         moves.push_back(move);
@@ -271,8 +288,8 @@ vector<struct move> generate_pawn_starting_move(struct game game, size_t pos)
         assert(false);
     }
 
-    // printf("src square = "); print_square(src);
-    // printf("dst square = "); print_square(dst);
+    // fprintf(dbg, "src square = "); print_square(src);
+    // fprintf(dbg, "dst square = "); print_square(dst);
 
     struct move move = {src, dst};
     moves.push_back(move);
@@ -303,8 +320,8 @@ vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
     if(!is_square_clear(game, dst))
         return moves;
 
-    // printf("src square = "); print_square(src);
-    // printf("dst square = "); print_square(dst);
+    // fprintf(dbg, "src square = "); print_square(src);
+    // fprintf(dbg, "dst square = "); print_square(dst);
 
     struct move move = {src, dst};
     moves.push_back(move);
@@ -387,6 +404,17 @@ vector<struct move> generate_queen_moves(struct game game, size_t pos)
     return generate_sliding_moves(game, pos, directions);
 }
 
+bool piece_moved(struct game game, size_t pos)
+{
+    struct square init_square = initial_board[pos].square;
+
+    for(auto move : game.moves)
+        if(move.src == init_square)
+            return true;
+
+    return false;
+}
+
 vector<struct move> generate_king_moves(struct game game, size_t pos)
 {
     vector<struct move> moves;
@@ -394,10 +422,11 @@ vector<struct move> generate_king_moves(struct game game, size_t pos)
         {0,1},{1,0},{0,-1},{-1,0},{1,1},{-1,1},{-1,-1},{1,-1}
     };
 
+    struct piece king = game.pieces[pos];
+    struct square src = king.square;
+
     for(struct square direction : directions)
     {
-        struct piece king = game.pieces[pos];
-        struct square src = king.square;
         struct square dst = src;
 
         dst += direction;
@@ -418,7 +447,66 @@ vector<struct move> generate_king_moves(struct game game, size_t pos)
         }
     }
 
-    // TODO Implement Castling.
+    if(game.cur_player == color::white && game.is_white_king_checked)
+        return moves;
+    else if(game.cur_player == color::black && game.is_black_king_checked)
+        return moves;
+
+    if(piece_moved(game, pos))
+        return moves;
+
+    for(size_t i = 0; i < game.pieces.size(); i++)
+    {
+        struct piece piece = game.pieces[i];
+
+        if(piece.is_captured)
+            continue;
+
+        if(piece.type != type::rook)
+            continue;
+
+        if(piece.color != game.cur_player)
+            continue;
+
+        if(piece_moved(game, i))
+            continue;
+
+        struct piece rook = piece;
+
+        struct square direction;
+        if(rook.square.col > src.col)
+            direction = mk_square(0,1);
+        else
+            direction = mk_square(0,-1);
+
+        struct square dst = src;
+        dst += direction;
+        bool cleared_path = true;
+        while(dst != rook.square)
+        {
+            if(not is_square_clear(game, dst))
+                cleared_path = false;
+            dst += direction;
+        }
+        if(not cleared_path)
+            continue;
+
+        dst = src;
+        for(size_t i = 0; i < 2; i++)
+        {
+            dst += direction;
+            struct game next_game = apply_move(game, {src,dst});
+            assert(next_game.cur_player == opponent(game.cur_player));
+
+            if(game.cur_player == color::white && game.is_white_king_checked)
+                cleared_path = false;
+            else if(game.cur_player == color::black && game.is_black_king_checked)
+                cleared_path = false;
+        }
+
+        if(cleared_path)
+            moves.push_back({src, dst});
+    }
 
     return moves;
 }
@@ -456,18 +544,127 @@ vector<struct move> generate_knight_moves(struct game game, size_t pos)
     return moves;
 }
 
+bool is_castling_move(struct game game, struct move move)
+{
+    fprintf(dbg, "inside is_castling_move().\n");
+    size_t src_pos = find_piece_pos(game, move.src);
+    struct piece src_piece = game.pieces[src_pos];
+
+    if(src_piece.type != type::king)
+    {
+        fprintf(dbg, "Not a king = %s.\n", type2string(src_piece.type));
+        return false;
+    }
+
+    if(src_piece.color == color::white)
+    {
+        if(src_piece.square != mk_square(0,4))
+        {
+            fprintf(dbg, "Not a king?\n");
+            print_square(src_piece.square);
+            return false;
+        }
+
+        if(move.dst != mk_square(0,2) &&
+           move.dst != mk_square(0,6))
+        {
+            fprintf(dbg, "Wrong dst square.\n");
+            print_square(move.dst);
+            return false;
+        }
+    }
+
+    if(src_piece.color == color::black)
+    {
+        if(src_piece.square != mk_square(7,4))
+        {
+            fprintf(dbg, "Wrong src square.\n");
+            print_square(src_piece.square);
+            return false;
+        }
+
+        if(move.dst != mk_square(7,2) &&
+           move.dst != mk_square(7,6))
+        {
+            fprintf(dbg, "Wrong dst square for black.\n");
+            print_square(move.dst);
+            return false;
+        }
+    }
+
+    return true;
+}
+
 struct game apply_move(struct game game, struct move move)
 {
-    game.moves.push_back(move);
-    game.cur_player = opponent(game.cur_player);
-
     size_t src_pos = find_piece_pos(game, move.src);
     size_t dst_pos = find_piece_pos(game, move.dst);
+    size_t rook_pos = (size_t)-1;
 
     assert(src_pos < game.pieces.size());
 //    assert(dst_pos < game.pieces.size());
 
     struct piece src_piece = game.pieces[src_pos];
+    bool is_castling_mv = is_castling_move(game, move);
+    if(is_castling_mv)
+    {
+        fprintf(dbg, "is castling move.\n");
+        assert(src_piece.type == type::king);
+        assert(dst_pos == (size_t)-1);
+
+        if(src_piece.square.row == 0)
+        {
+            fprintf(dbg, "Castling for white.\n");
+            assert(src_piece.color == color::white);
+            if(move.dst.col == 2) // Big castle.
+            {
+                fprintf(dbg, "big castle.\n");
+                rook_pos = find_piece_pos(game, {0,0});
+                assert(rook_pos != (size_t)-1);
+                struct piece rook = game.pieces[rook_pos];
+                assert(rook.color == color::white);
+                assert(find_piece_pos(game, {0,3}) == (size_t)-1);
+                game.pieces[rook_pos].square = {0,3};
+            }
+            else if(move.dst.col == 6) // little castle.
+            {
+                fprintf(dbg, "little castle.\n");
+                rook_pos = find_piece_pos(game, {0,7});
+                assert(rook_pos != (size_t)-1);
+                struct piece rook = game.pieces[rook_pos];
+                assert(rook.color == color::white);
+                assert(find_piece_pos(game, {0,5}) == (size_t)-1);
+                game.pieces[rook_pos].square = {0,5};
+            }
+        }
+        else if(src_piece.square.row == 7)
+        {
+            fprintf(dbg, "Castling for black.\n");
+            assert(src_piece.color == color::black);
+            if(move.dst.col == 2) // Big castle.
+            {
+                rook_pos = find_piece_pos(game, {7,0});
+                assert(rook_pos != (size_t)-1);
+                struct piece rook = game.pieces[rook_pos];
+                assert(rook.color == color::black);
+                assert(find_piece_pos(game, {7,3}) == (size_t)-1);
+                game.pieces[rook_pos].square = {7,3};
+            }
+            else if(move.dst.col == 6) // litlle castle.
+            {
+                rook_pos = find_piece_pos(game, {7,7});
+                assert(rook_pos != (size_t)-1);
+                struct piece rook = game.pieces[rook_pos];
+                assert(rook.color == color::black);
+                assert(find_piece_pos(game, {7,5}) == (size_t)-1);
+                game.pieces[rook_pos].square = {7,5};
+            }
+        }
+    }
+
+    game.moves.push_back(move);
+    game.cur_player = opponent(game.cur_player);
+
     src_piece.square = move.dst;
     game.pieces[src_pos] = src_piece;
 
@@ -479,6 +676,21 @@ struct game apply_move(struct game game, struct move move)
     }
 
     return game;
+}
+
+void update_king_statuses(struct game& game)
+{
+    game.is_white_king_checked = is_white_king_checked(game);
+    game.is_black_king_checked = is_black_king_checked(game);
+
+    assert(not(game.is_white_king_checked && game.is_black_king_checked));
+
+    if(opponent(game.cur_player) == color::white)
+        assert(game.is_white_king_checked == false);
+    else if(opponent(game.cur_player) == color::black)
+        assert(game.is_black_king_checked == false);
+    else
+        assert(false);
 }
 
 bool is_king_captured(struct game game)
@@ -573,18 +785,29 @@ vector<struct move> next_valid_moves(struct game game)
 
         if(is_valid)
             moves.push_back(move);
-   }
+    }
 
     return moves;
 }
 
 bool is_king_checked(struct game game)
 {
-    game.cur_player = opponent(game.cur_player);
     for(struct game next_game : next_games(game))
     {
         if(is_king_captured(next_game))
             return true;
     }
     return false;
+}
+
+bool is_white_king_checked(struct game game)
+{
+    game.cur_player = color::black;
+    return is_king_checked(game);
+}
+
+bool is_black_king_checked(struct game game)
+{
+    game.cur_player = color::white;
+    return is_king_checked(game);
 }

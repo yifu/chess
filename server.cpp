@@ -174,8 +174,11 @@ void process_move(int fd, struct move_msg *move_msg)
 
         if(next_valid_moves(current_game.game).size() == 0)
         {
-            if(is_king_checked(current_game.game))
-                printf("CHECKMATE!!\n");
+            update_king_statuses(current_game.game);
+            if(current_game.game.cur_player == color::white && current_game.game.is_white_king_checked)
+                printf("WHITE IS CHECKMATED!!\n");
+            else if(current_game.game.cur_player == color::black && current_game.game.is_black_king_checked)
+                printf("BLACK IS CHECKMATED!!\n");
             else
                 printf("STALEMATE!!\n");
             // TODO The game end here. Mark it into the game. As a

@@ -20,6 +20,8 @@
 #include "game.hpp"
 #include "net_protocol.hpp"
 
+extern FILE *dbg;
+
 using namespace std;
 
 constexpr int screenwidth = 640;
@@ -246,12 +248,12 @@ struct sprite
 
 void print_timespec(struct timespec t)
 {
-    printf("tv_sec=%lu, tv_nsec=%lu.\n", t.tv_sec, t.tv_nsec);
+    fprintf(dbg, "tv_sec=%lu, tv_nsec=%lu.\n", t.tv_sec, t.tv_nsec);
 }
 
 void print_mouse_motion(SDL_Event e)
 {
-    printf("e.motion={type=%u,timestamp=%u,winid=%u,which=%u,state=%u,x=%d,y=%d,xrel=%d,yrel=%d}\n",
+    fprintf(dbg, "e.motion={type=%u,timestamp=%u,winid=%u,which=%u,state=%u,x=%d,y=%d,xrel=%d,yrel=%d}\n",
            e.motion.type,
            e.motion.timestamp,
            e.motion.windowID,
@@ -265,7 +267,7 @@ void print_mouse_motion(SDL_Event e)
 
 void print_mouse_button_event(SDL_Event e)
 {
-    printf("e.button={type=%u,timestamp=%u,winid=%u,which=%u,button=%d,state=%u,clicks=%d,x=%d,y=%d}\n",
+    fprintf(dbg, "e.button={type=%u,timestamp=%u,winid=%u,which=%u,button=%d,state=%u,clicks=%d,x=%d,y=%d}\n",
            e.button.type,
            e.button.timestamp,
            e.button.windowID,
@@ -372,7 +374,7 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
     assert(fd != -1);
     if(scr_type == screen_type::menu)
     {
-        // printf("process_sdl_mousebuttondown(): menu.\n");
+        // fprintf(dbg, "process_sdl_mousebuttondown(): menu.\n");
         for(auto menu_item : menu_items)
         {
             if(is_hitting_rect(menu_item.rect, e.button.x, e.button.y))
@@ -394,12 +396,12 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
     }
     else if(scr_type == screen_type::players_list)
     {
-        printf("process_sdl_mousebuttondown(): player list.\n");
+        fprintf(dbg, "process_sdl_mousebuttondown(): player list.\n");
         for(auto menu_item : menu_items)
         {
             if(is_hitting_rect(menu_item.rect, e.button.x, e.button.y))
             {
-                printf("send request for game to %s.", menu_item.label.c_str());
+                fprintf(dbg, "send request for game to %s.", menu_item.label.c_str());
                 struct request_for_game msg;
                 msg.msg_type = msg_type::request_for_game;
                 strcpy(msg.opponent_username, menu_item.label.c_str());
@@ -434,7 +436,7 @@ void process_sdl_mousebuttondown(SDL_Event& e, struct game& game, int fd)
     }
     if(found)
     {
-        // printf("process_sdl_mousebuttondown: dragged_piece pos = %lu.\n", dragged_piece);
+        // fprintf(dbg, "process_sdl_mousebuttondown: dragged_piece pos = %lu.\n", dragged_piece);
         print_piece(game.pieces[dragged_piece]);
     }
 }
@@ -459,15 +461,20 @@ void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
             auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
             if(found != valid_moves.end())
             {
+                fprintf(dbg, "APPLY MOVE.\n");
                 game = apply_move(game, candidate_move);
+                fprintf(dbg, "APPLY MOVE - AFTER.\n");
                 send_move(candidate_move, fd);
 
                 if(next_valid_moves(game).size() == 0)
                 {
-                    if(is_king_checked(game))
-                        printf("CHECKMATE!!\n");
+                    update_king_statuses(game);
+                    if(game.cur_player == color::white && game.is_white_king_checked)
+                        fprintf(dbg, "WHITE IS CHECKMATED!!\n");
+                    else if(game.cur_player == color::black && game.is_black_king_checked)
+                        fprintf(dbg, "BLACK IS CHECKMATED!!\n");
                     else
-                        printf("STALEMATE!!\n");
+                        fprintf(dbg, "STALEMATE!!\n");
                 }
             }
         }
@@ -486,22 +493,22 @@ void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
 
 void process_input_events(SDL_Event& e, struct game& game, int fd)
 {
-    // printf("Input Events!\n");
+    // fprintf(dbg, "Input Events!\n");
     switch(e.type)
     {
     case SDL_QUIT:
     {
-        printf("quit\n");
+        fprintf(dbg, "quit\n");
         quit = true;
         break;
     }
     case SDL_KEYDOWN:
     {
-        printf("key down %d\n", e.key.keysym.sym);
+        fprintf(dbg, "key down %d\n", e.key.keysym.sym);
         if(e.key.keysym.sym == SDLK_ESCAPE)
         {
             scr_type = screen_type::menu;
-            printf("scr_type = %d.\n", scr_type);
+            fprintf(dbg, "scr_type = %d.\n", scr_type);
         }
         break;
     }
@@ -523,7 +530,7 @@ void process_input_events(SDL_Event& e, struct game& game, int fd)
     }
     default:
     {
-        printf("e.type=%d\n", e.type);
+        fprintf(dbg, "e.type=%d\n", e.type);
         break;
     }
     }
@@ -566,7 +573,7 @@ void paint_chess_board()
 
             SDL_SetRenderDrawColor(ren, r, g, b, SDL_ALPHA_OPAQUE);
 
-            // printf("dst.x=%d, dst.y=%d, dst.w=%d, dst.h=%d.\n",
+            // fprintf(dbg, "dst.x=%d, dst.y=%d, dst.w=%d, dst.h=%d.\n",
             //        dst.x, dst.y, dst.w, dst.h);
             SDL_RenderFillRect(ren, &dst);
             dst.x += dst.w;
@@ -584,7 +591,7 @@ void paint_sprites(const struct game& game)
     {
         // print_timespec(curtime);
         // print_timespec(anim_sprite.end);
-        // printf("End animation.\n");
+        // fprintf(dbg, "End animation.\n");
         anim_sprite.pos = -1;
     }
 
@@ -622,7 +629,7 @@ void paint_sprites(const struct game& game)
     {
         struct piece piece = game.pieces[anim_sprite.pos];
         assert(!piece.is_captured);
-        // printf("Paint the animated sprite.\n");
+        // fprintf(dbg, "Paint the animated sprite.\n");
         // print_rect(anim_sprite.cur);
 
         int dx = (anim_sprite.dst.x > anim_sprite.src.x)? anim_sprite.dst.x-anim_sprite.src.x : anim_sprite.src.x-anim_sprite.dst.x;
@@ -633,13 +640,6 @@ void paint_sprites(const struct game& game)
         y = ((anim_sprite.dst.y > anim_sprite.src.y)?y:-y);
         anim_sprite.cur.x = anim_sprite.src.x+x;
         anim_sprite.cur.y = anim_sprite.src.y+y;
-        printf("to_uint64(curtime - anim_sprite.begin) = %" PRIu64 ".\n", to_uint64(curtime - anim_sprite.begin));
-        printf("(anim_sprite.dst.x - anim_sprite.src.x) = %d.\n", (anim_sprite.dst.x - anim_sprite.src.x));
-        printf("to_uint64(anim_sprite.end - anim_sprite.begin) = %" PRIu64 ".\n", to_uint64(anim_sprite.end - anim_sprite.begin));
-        // printf("dx = %" PRIu64 ".\n", to_uint64(curtime - anim_sprite.begin) * (anim_sprite.dst.x - anim_sprite.src.x) / to_uint64(anim_sprite.end - anim_sprite.begin));
-        print_rect(anim_sprite.src);
-        printf("dx=%d, dy=%d, x=%d, y=%d.\n", dx, dy, x, y);
-        print_rect(anim_sprite.cur);
 
         SDL_Texture *texture = deduct_texture(piece);
         SDL_RenderCopy(ren, texture, nullptr, &anim_sprite.cur);
@@ -676,7 +676,7 @@ void paint_menu()
     {
     case screen_type::menu:
     case screen_type::players_list:
-        // printf("Paint menu.\n");
+        // fprintf(dbg, "Paint menu.\n");
         for(auto menu_item : menu_items)
         {
             SDL_Texture *text_texture = nullptr;
@@ -697,7 +697,7 @@ void paint_menu()
     case screen_type::game:
         break;
     default:
-        printf("Not implemented yet.");
+        fprintf(dbg, "Not implemented yet.");
         break;
     }
 }
@@ -831,31 +831,31 @@ int init_network(string ip, string port)
 
 void print_poll_events(short events)
 {
-    if(events & POLLIN) printf("POLLIN|");
-    if(events & POLLPRI) printf("POLLPRI|");
-    if(events & POLLOUT) printf("POLLOUT|");
-    if(events & POLLRDHUP) printf("POLLRDHUP|");
-    if(events & POLLERR) printf("POLLERR|");
-    if(events & POLLHUP) printf("POLLHUP|");
-    if(events & POLLNVAL) printf("POLLNVAL|");
-    if(events & POLLRDNORM) printf("POLLRDNORM|");
-    if(events & POLLRDBAND) printf("POLLRDBAND|");
-    if(events & POLLWRNORM) printf("POLLWRNORM|");
-    if(events & POLLWRBAND) printf("POLLWRBAND|");
+    if(events & POLLIN) fprintf(dbg, "POLLIN|");
+    if(events & POLLPRI) fprintf(dbg, "POLLPRI|");
+    if(events & POLLOUT) fprintf(dbg, "POLLOUT|");
+    if(events & POLLRDHUP) fprintf(dbg, "POLLRDHUP|");
+    if(events & POLLERR) fprintf(dbg, "POLLERR|");
+    if(events & POLLHUP) fprintf(dbg, "POLLHUP|");
+    if(events & POLLNVAL) fprintf(dbg, "POLLNVAL|");
+    if(events & POLLRDNORM) fprintf(dbg, "POLLRDNORM|");
+    if(events & POLLRDBAND) fprintf(dbg, "POLLRDBAND|");
+    if(events & POLLWRNORM) fprintf(dbg, "POLLWRNORM|");
+    if(events & POLLWRBAND) fprintf(dbg, "POLLWRBAND|");
 }
 
 void print_pollfd(struct pollfd pollfd)
 {
-    printf("pollfd={fd=%d,events=", pollfd.fd);
+    fprintf(dbg, "pollfd={fd=%d,events=", pollfd.fd);
     print_poll_events(pollfd.events);
-    printf(",revents=");
+    fprintf(dbg, ",revents=");
     print_poll_events(pollfd.revents);
-    printf("}\n");
+    fprintf(dbg, "}\n");
 }
 
 void process_sdl_evt_fd(struct pollfd pollfd, int fd, struct game& game)
 {
-    // printf("controller thread: read pipe read end.\n");
+    // fprintf(dbg, "controller thread: read pipe read end.\n");
     SDL_Event e;
     ssize_t n = read(pollfd.fd, &e, sizeof(e));
     if(n == -1)
@@ -865,14 +865,14 @@ void process_sdl_evt_fd(struct pollfd pollfd, int fd, struct game& game)
     }
     else if(n == 0)
     {
-        printf("controller thread: nothing to read from the sdl evt thread.\n");
+        fprintf(dbg, "controller thread: nothing to read from the sdl evt thread.\n");
         close(pollfd.fd);
         quit = true;
         return;
     }
     else if(n != sizeof(e))
     {
-        printf("controller thread: received %lu, instead of %lu.\n",
+        fprintf(dbg, "controller thread: received %lu, instead of %lu.\n",
                n, sizeof(e));
     }
 
@@ -881,7 +881,7 @@ void process_sdl_evt_fd(struct pollfd pollfd, int fd, struct game& game)
 
 void process_server_fd(struct pollfd pollfd, struct game& game)
 {
-    // printf("controller thread: read socket.\n");
+    // fprintf(dbg, "controller thread: read socket.\n");
     char buf[1024];
     int n = recv(pollfd.fd, buf, sizeof(buf), 0);
     if(n < 0)
@@ -896,14 +896,14 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
     {
         if(n == 0)
         {
-            printf("controller thread: socket closed.\n");
+            fprintf(dbg, "controller thread: socket closed.\n");
             close(pollfd.fd);
             quit = true;
         }
         else
         {
             enum msg_type type = (enum msg_type)buf[0];
-            printf("msg type=%d, len=%d.\n", type, n);
+            fprintf(dbg, "msg type=%d, len=%d.\n", type, n);
             switch(type)
             {
             case msg_type::move_msg:
@@ -935,16 +935,19 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 game = apply_move(game, move);
                 if(next_valid_moves(game).size() == 0)
                 {
-                    if(is_king_checked(game))
-                        printf("CHECKMATE!!\n");
+                    update_king_statuses(game);
+                    if(game.cur_player == color::white && game.is_white_king_checked)
+                        fprintf(dbg, "WHITE IS CHECKMATED!!\n");
+                    else if(game.cur_player == color::black && game.is_black_king_checked)
+                        fprintf(dbg, "BLACK IS CHECKMATED!!\n");
                     else
-                        printf("STALEMATE!!\n");
+                        fprintf(dbg, "STALEMATE!!\n");
                 }
                 break;
             }
             case msg_type::reject_move_msg:
             {
-                printf("rejected msg.\n");
+                fprintf(dbg, "rejected msg.\n");
                 assert(n == sizeof(struct reject_move_msg));
                 game = last_game;
                 break;
@@ -953,7 +956,7 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
             {
                 struct new_game_msg msg = *(struct new_game_msg*)buf;
                 assert(n == sizeof(msg));
-                printf("new_game_msg={player_color=%d}\n", msg.player_color);
+                fprintf(dbg, "new_game_msg={player_color=%d}\n", msg.player_color);
                 fflush(stdout);
                 struct game new_game;
                 game = new_game;
@@ -964,14 +967,14 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
             }
             case msg_type::game_evt_msg:
             {
-                printf("Opponent resigned.\n");
+                fprintf(dbg, "Opponent resigned.\n");
                 break;
             }
             case msg_type::players:
             {
                 struct players_list_msg msg = *(struct players_list_msg*)buf;
                 assert(n == sizeof(msg));
-                // printf("players = [%s].\n", msg.players_list);
+                // fprintf(dbg, "players = [%s].\n", msg.players_list);
                 // fflush(stdout);
 
                 istringstream iss(msg.players_list);
@@ -1060,7 +1063,7 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
             }
             else
             {
-                printf("controller thread: Un-processed event: ");
+                fprintf(dbg, "controller thread: Un-processed event: ");
                 print_pollfd(pollfd);
             }
         }
@@ -1069,10 +1072,10 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
 
         struct timespec end;
         clock_gettime(CLOCK_MONOTONIC, &end);
-        // printf("Total time = %" PRIu64 ".\n", to_uint64(end-beg));
+        // fprintf(dbg, "Total time = %" PRIu64 ".\n", to_uint64(end-beg));
     }
     // TODO We must try to re-connect to the server.
-    printf("controller thread: bye!\n");
+    fprintf(dbg, "controller thread: bye!\n");
     clean_up();
 }
 
@@ -1086,7 +1089,7 @@ void push_evt_into_controller_thread(SDL_Event& e, int fd)
     }
     else if(n != sizeof(e))
     {
-        printf("SDL Thread: error, write() wrote %lu bytes instead of %lu\n",
+        fprintf(dbg, "SDL Thread: error, write() wrote %lu bytes instead of %lu\n",
                n, sizeof(e));
         assert(false);
         exit_failure();
@@ -1102,11 +1105,13 @@ void sdl_evt_thread(int event_pipe)
         if(e.type == SDL_QUIT)
             break;
     }
-    printf("sdl evt thread: bye!\n");
+    fprintf(dbg, "sdl evt thread: bye!\n");
 }
 
 int main()
 {
+    printf("PID=%d.\n", getpid());
+
     int pipefd[2] = {-1,-1};
     int res = pipe(pipefd);
     if(res == -1)
@@ -1118,7 +1123,7 @@ int main()
     thread t(sdl_evt_thread, pipefd[1]);
 
     controller_thread("195.154.72.36", "55555", pipefd[0]);
-    printf("bye!\n");
+    fprintf(dbg, "bye!\n");
 
     close(pipefd[1]);
     t.join();
