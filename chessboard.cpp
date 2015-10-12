@@ -226,7 +226,7 @@ struct square detect_square(Sint32 x, Sint32 y)
             SDL_Rect rect = square2rect(square);
             if(is_hitting_rect(rect, x, y))
             {
-                print_square(square);
+                // print_square(square);
                 return square;
             }
         }
@@ -234,7 +234,7 @@ struct square detect_square(Sint32 x, Sint32 y)
 
     assert(false);
     struct square result = {-1,-1};
-    print_square(result);
+    // print_square(result);
     return result;
 }
 
@@ -318,6 +318,7 @@ SDL_Texture *deduct_texture(struct piece piece)
     {
         switch(piece.type)
         {
+        case type::none: assert(false); break;
         case type::pawn: return white_pawn_texture;
         case type::rook: return white_rook_texture;
         case type::knight: return white_knight_texture;
@@ -330,6 +331,7 @@ SDL_Texture *deduct_texture(struct piece piece)
     {
         switch(piece.type)
         {
+        case type::none: assert(false); break;
         case type::pawn: return black_pawn_texture;
         case type::rook: return black_rook_texture;
         case type::knight: return black_knight_texture;
@@ -451,17 +453,43 @@ void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
         struct piece& piece = game.pieces[dragged_piece];
         struct square src = piece.square;
         struct square dst = detect_square(e.button.x, e.button.y);
-        struct move candidate_move = {src, dst};
+        struct move candidate_move = {src, dst, type::none};
 
         // TODO Refactor the following. Must be moved into game.cpp file?
 
         if(check_for_valid_moves)
         {
             vector<struct move> valid_moves = next_valid_moves(game);
-            auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
-            if(found != valid_moves.end())
+            fprintf(dbg, "CANDIDATE MOVE IS :\n");
+            print_move(candidate_move);
+            fprintf(dbg, "VALID MOVES BEGIN\n");
+            bool found = false;
+            // TODO When implementing a real promotion with choice
+            // from the user, then fix that.
+            for(auto move : valid_moves)
+            {
+                print_move(move);
+                if(move.src != candidate_move.src)
+                    continue;
+                if(move.dst != candidate_move.dst)
+                    continue;
+
+                // TODO FIX THIS.
+                candidate_move = move;
+
+                found = true;
+            }
+            fprintf(dbg, "VALID MOVES END\n");
+
+            // auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
+
+            if(found)
+                fprintf(dbg, "CANDIDATE MOVE DOES NOT MATCH ANY VALID MOVES.\n");
+
+            if(found)
             {
                 fprintf(dbg, "APPLY MOVE.\n");
+                print_move(candidate_move);
                 game = apply_move(game, candidate_move);
                 fprintf(dbg, "APPLY MOVE - AFTER.\n");
                 send_move(candidate_move, fd);
@@ -902,9 +930,9 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
         }
         else
         {
-            enum msg_type type = (enum msg_type)buf[0];
-            fprintf(dbg, "msg type=%d, len=%d.\n", type, n);
-            switch(type)
+            enum msg_type msgtype = (enum msg_type)buf[0];
+            fprintf(dbg, "msg type=%d, len=%d.\n", msgtype, n);
+            switch(msgtype)
             {
             case msg_type::move_msg:
             {
@@ -915,11 +943,18 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 move.src.col = msg.src_col;
                 move.dst.row = msg.dst_row;
                 move.dst.col = msg.dst_col;
+                move.promotion = type::none;
 
                 anim_sprite.pos = -1;
                 for(size_t i = 0; i < game.pieces.size(); i++)
+                {
                     if(game.pieces[i].square == move.src)
+                    {
+                        if(game.pieces[i].is_captured)
+                            continue;
                         anim_sprite.pos = i;
+                    }
+                }
                 assert(anim_sprite.pos != (size_t)-1);
 
                 anim_sprite.cur = square2rect(move.src);
@@ -1069,6 +1104,7 @@ void controller_thread(string ip, string port, int sdl_evt_fd)
         }
 
         paint_screen(game);
+        fflush(dbg);
 
         struct timespec end;
         clock_gettime(CLOCK_MONOTONIC, &end);

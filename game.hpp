@@ -12,6 +12,7 @@ enum class color
 
 enum class type
 {
+    none,
     pawn,
     knight,
     bishop,
@@ -32,6 +33,7 @@ bool operator == (struct square l, struct square r);
 struct move
 {
     struct square src, dst;
+    type promotion;
 };
 
 bool operator == (struct move l, struct move r);

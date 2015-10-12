@@ -66,7 +66,7 @@ bool operator == (struct square l, struct square r)
 
 bool operator == (struct move l, struct move r)
 {
-    return l.src == r.src && l.dst == r.dst;
+    return l.src == r.src && l.dst == r.dst && l.promotion == r.promotion;
 }
 
 const char *color2string(enum color c)
@@ -84,6 +84,7 @@ const char *type2string(enum type t)
 {
     switch(t)
     {
+    case type::none: return "none";
     case type::pawn: return "pawn";
     case type::rook: return "rook";
     case type::knight: return "knight";
@@ -103,9 +104,10 @@ void print_square(struct square square)
 
 void print_move(struct move move)
 {
-    fprintf(dbg, "move={src={%d,%d},dst={%d,%d}}\n",
-	   move.src.row, move.src.col,
-	   move.dst.row, move.src.col);
+    fprintf(dbg, "move={src={%d,%d},dst={%d,%d},promotion=%s}\n",
+            move.src.row, move.src.col,
+            move.dst.row, move.src.col,
+            type2string(move.promotion));
 }
 
 void print_game(struct game game)
@@ -241,7 +243,13 @@ vector<struct move> generate_pawn_capturing_move(struct game game, size_t pos)
         // fprintf(dbg, "src square = "); print_square(src);
         // fprintf(dbg, "dst square = "); print_square(dst);
 
-        struct move move = {src, dst};
+        struct move move = {src, dst, type::none};
+
+        if(game.cur_player == color::white && dst.row == 7)
+            move.promotion = type::queen;
+        else if(game.cur_player == color::black && dst.row == 0)
+            move.promotion = type::queen;
+
         moves.push_back(move);
     }
     return moves;
@@ -291,7 +299,7 @@ vector<struct move> generate_pawn_starting_move(struct game game, size_t pos)
     // fprintf(dbg, "src square = "); print_square(src);
     // fprintf(dbg, "dst square = "); print_square(dst);
 
-    struct move move = {src, dst};
+    struct move move = {src, dst, type::none};
     moves.push_back(move);
 
     return moves;
@@ -323,7 +331,13 @@ vector<struct move> generate_usual_pawn_move(struct game game, size_t pos)
     // fprintf(dbg, "src square = "); print_square(src);
     // fprintf(dbg, "dst square = "); print_square(dst);
 
-    struct move move = {src, dst};
+    struct move move = {src, dst, type::none};
+
+    if(game.cur_player == color::white && dst.row == 7)
+        move.promotion = type::queen;
+    else if(game.cur_player == color::black && dst.row == 0)
+        move.promotion = type::queen;
+
     moves.push_back(move);
     return moves;
 }
@@ -336,7 +350,6 @@ vector<struct move> generate_pawn_moves(struct game game, size_t pos)
     vector<struct move> usual_moves = generate_usual_pawn_move(game, pos);
     vector<struct move> starting_moves = generate_pawn_starting_move(game, pos);
     vector<struct move> capturing_moves = generate_pawn_capturing_move(game, pos);
-    // TODO Implement promoting pawn move.
 
     moves.insert(moves.begin(), usual_moves.begin(), usual_moves.end());
     moves.insert(moves.begin(), starting_moves.begin(), starting_moves.end());
@@ -369,7 +382,7 @@ vector<struct move> generate_sliding_moves(struct game game, size_t pos,
         {
             if(is_square_clear(game, dst))
             {
-                moves.push_back({src,dst});
+                moves.push_back({src, dst, type::none});
                 dst += direction;
             }
             else
@@ -378,7 +391,7 @@ vector<struct move> generate_sliding_moves(struct game game, size_t pos,
                 size_t pos = find_piece_pos(game, dst);
                 assert(pos < game.pieces.size());
                 if(game.pieces[pos].color != game.cur_player)
-                    moves.push_back({src,dst});
+                    moves.push_back({src, dst, type::none});
                 break;
             }
         }
@@ -434,7 +447,7 @@ vector<struct move> generate_king_moves(struct game game, size_t pos)
         {
             if(is_square_clear(game, dst))
             {
-                moves.push_back({src,dst});
+                moves.push_back({src, dst, type::none});
             }
             else
             {
@@ -442,7 +455,7 @@ vector<struct move> generate_king_moves(struct game game, size_t pos)
                 size_t pos = find_piece_pos(game, dst);
                 assert(pos < game.pieces.size());
                 if(game.pieces[pos].color != game.cur_player)
-                    moves.push_back({src,dst});
+                    moves.push_back({src, dst, type::none});
             }
         }
     }
@@ -495,7 +508,7 @@ vector<struct move> generate_king_moves(struct game game, size_t pos)
         for(size_t i = 0; i < 2; i++)
         {
             dst += direction;
-            struct game next_game = apply_move(game, {src,dst});
+            struct game next_game = apply_move(game, {src, dst, type::none});
             assert(next_game.cur_player == opponent(game.cur_player));
 
             if(game.cur_player == color::white && game.is_white_king_checked)
@@ -505,7 +518,7 @@ vector<struct move> generate_king_moves(struct game game, size_t pos)
         }
 
         if(cleared_path)
-            moves.push_back({src, dst});
+            moves.push_back({src, dst, type::none});
     }
 
     return moves;
@@ -529,7 +542,7 @@ vector<struct move> generate_knight_moves(struct game game, size_t pos)
         {
             if(is_square_clear(game, dst))
             {
-                moves.push_back({src,dst});
+                moves.push_back({src, dst, type::none});
             }
             else
             {
@@ -537,7 +550,7 @@ vector<struct move> generate_knight_moves(struct game game, size_t pos)
                 size_t pos = find_piece_pos(game, dst);
                 assert(pos < game.pieces.size());
                 if(game.pieces[pos].color != game.cur_player)
-                    moves.push_back({src,dst});
+                    moves.push_back({src, dst, type::none});
             }
         }
     }
@@ -546,13 +559,13 @@ vector<struct move> generate_knight_moves(struct game game, size_t pos)
 
 bool is_castling_move(struct game game, struct move move)
 {
-    fprintf(dbg, "inside is_castling_move().\n");
+    // fprintf(dbg, "inside is_castling_move().\n");
     size_t src_pos = find_piece_pos(game, move.src);
     struct piece src_piece = game.pieces[src_pos];
 
     if(src_piece.type != type::king)
     {
-        fprintf(dbg, "Not a king = %s.\n", type2string(src_piece.type));
+        // fprintf(dbg, "Not a king = %s.\n", type2string(src_piece.type));
         return false;
     }
 
@@ -560,16 +573,16 @@ bool is_castling_move(struct game game, struct move move)
     {
         if(src_piece.square != mk_square(0,4))
         {
-            fprintf(dbg, "Not a king?\n");
-            print_square(src_piece.square);
+            // fprintf(dbg, "Not a king?\n");
+            // print_square(src_piece.square);
             return false;
         }
 
         if(move.dst != mk_square(0,2) &&
            move.dst != mk_square(0,6))
         {
-            fprintf(dbg, "Wrong dst square.\n");
-            print_square(move.dst);
+            // fprintf(dbg, "Wrong dst square.\n");
+            // print_square(move.dst);
             return false;
         }
     }
@@ -578,16 +591,16 @@ bool is_castling_move(struct game game, struct move move)
     {
         if(src_piece.square != mk_square(7,4))
         {
-            fprintf(dbg, "Wrong src square.\n");
-            print_square(src_piece.square);
+            // fprintf(dbg, "Wrong src square.\n");
+            // print_square(src_piece.square);
             return false;
         }
 
         if(move.dst != mk_square(7,2) &&
            move.dst != mk_square(7,6))
         {
-            fprintf(dbg, "Wrong dst square for black.\n");
-            print_square(move.dst);
+            // fprintf(dbg, "Wrong dst square for black.\n");
+            // print_square(move.dst);
             return false;
         }
     }
@@ -608,17 +621,17 @@ struct game apply_move(struct game game, struct move move)
     bool is_castling_mv = is_castling_move(game, move);
     if(is_castling_mv)
     {
-        fprintf(dbg, "is castling move.\n");
+        // fprintf(dbg, "is castling move.\n");
         assert(src_piece.type == type::king);
         assert(dst_pos == (size_t)-1);
 
         if(src_piece.square.row == 0)
         {
-            fprintf(dbg, "Castling for white.\n");
+            // fprintf(dbg, "Castling for white.\n");
             assert(src_piece.color == color::white);
             if(move.dst.col == 2) // Big castle.
             {
-                fprintf(dbg, "big castle.\n");
+                // fprintf(dbg, "big castle.\n");
                 rook_pos = find_piece_pos(game, {0,0});
                 assert(rook_pos != (size_t)-1);
                 struct piece rook = game.pieces[rook_pos];
@@ -628,7 +641,7 @@ struct game apply_move(struct game game, struct move move)
             }
             else if(move.dst.col == 6) // little castle.
             {
-                fprintf(dbg, "little castle.\n");
+                // fprintf(dbg, "little castle.\n");
                 rook_pos = find_piece_pos(game, {0,7});
                 assert(rook_pos != (size_t)-1);
                 struct piece rook = game.pieces[rook_pos];
@@ -639,7 +652,7 @@ struct game apply_move(struct game game, struct move move)
         }
         else if(src_piece.square.row == 7)
         {
-            fprintf(dbg, "Castling for black.\n");
+            // fprintf(dbg, "Castling for black.\n");
             assert(src_piece.color == color::black);
             if(move.dst.col == 2) // Big castle.
             {
@@ -666,6 +679,11 @@ struct game apply_move(struct game game, struct move move)
     game.cur_player = opponent(game.cur_player);
 
     src_piece.square = move.dst;
+    if(move.promotion != type::none)
+    {
+        assert(src_piece.type == type::pawn);
+        src_piece.type = move.promotion;
+    }
     game.pieces[src_pos] = src_piece;
 
     if(dst_pos != (size_t)-1)
@@ -723,6 +741,9 @@ vector<struct move> next_moves(struct game game)
         vector<struct move> moves;
         switch(piece.type)
         {
+        case type::none:
+            assert(false);
+            break;
         case type::pawn:
             moves = generate_pawn_moves(game, i);
             break;
@@ -748,6 +769,10 @@ vector<struct move> next_moves(struct game game)
 
         cur_player_moves.insert(cur_player_moves.end(), moves.begin(), moves.end());
     }
+
+    for(auto move : cur_player_moves)
+        assert(move.dst != move.src);
+
     return cur_player_moves;
 }
 

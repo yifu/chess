@@ -157,7 +157,8 @@ void process_move(int fd, struct move_msg *move_msg)
     assert(opponent_fd != -1);
 
     struct move candidate_move = {{move_msg->src_row, move_msg->src_col},
-                                  {move_msg->dst_row, move_msg->dst_col}};
+                                  {move_msg->dst_row, move_msg->dst_col},
+                                  type::none};
     vector<struct move> valid_moves = next_valid_moves(current_game.game);
     auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
     if(found != valid_moves.end())
