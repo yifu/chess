@@ -205,6 +205,52 @@ size_t find_piece_pos(struct game game, struct square square)
     return -1;
 }
 
+vector<struct move> generate_pawn_en_passant_move(struct game game, size_t pos)
+{
+    assert(pos < game.pieces.size());
+
+    vector<struct move> moves;
+
+    if(game.moves.empty())
+        return moves;
+
+    struct move last_move = game.moves.back();
+    struct piece piece = get_piece(game, last_move.dst);
+    struct piece pawn = game.pieces[pos];
+
+    if(piece.type != type::pawn)
+        return moves;
+
+    assert(piece.color == opponent(game.cur_player));
+
+    if(game.cur_player == color::white &&
+       last_move.src.row == 6 &&
+       last_move.dst.row == 4 &&
+       last_move.src.col == last_move.dst.col &&
+       last_move.dst.row == pawn.square.row &&
+       ((pawn.square.col == last_move.dst.col-1) ||
+        (pawn.square.col == last_move.dst.col+1)))
+    {
+        struct square dst {pawn.square.row+1, last_move.dst.col};
+        struct move move {pawn.square, dst, type::none};
+        moves.push_back(move);
+    }
+    else if(game.cur_player == color::black &&
+            last_move.src.row == 1 &&
+            last_move.dst.row == 3 &&
+            last_move.src.col == last_move.dst.col &&
+            last_move.dst.row == pawn.square.row &&
+            ((pawn.square.col == last_move.dst.col-1) ||
+             (pawn.square.col == last_move.dst.col+1)))
+    {
+        struct square dst {pawn.square.row-1, last_move.dst.col};
+        struct move move {pawn.square, dst, type::none};
+        moves.push_back(move);
+    }
+
+    return moves;
+}
+
 vector<struct move> generate_pawn_capturing_move(struct game game, size_t pos)
 {
     assert(pos < game.pieces.size());
@@ -350,10 +396,12 @@ vector<struct move> generate_pawn_moves(struct game game, size_t pos)
     vector<struct move> usual_moves = generate_usual_pawn_move(game, pos);
     vector<struct move> starting_moves = generate_pawn_starting_move(game, pos);
     vector<struct move> capturing_moves = generate_pawn_capturing_move(game, pos);
+    vector<struct move> en_passant_moves = generate_pawn_en_passant_move(game, pos);
 
     moves.insert(moves.begin(), usual_moves.begin(), usual_moves.end());
     moves.insert(moves.begin(), starting_moves.begin(), starting_moves.end());
     moves.insert(moves.begin(), capturing_moves.begin(), capturing_moves.end());
+    moves.insert(moves.begin(), en_passant_moves.begin(), en_passant_moves.end());
 
     return moves;
 }
@@ -608,6 +656,24 @@ bool is_castling_move(struct game game, struct move move)
     return true;
 }
 
+bool is_en_passant_move(struct game game, struct move move)
+{
+    size_t src_pos = find_piece_pos(game, move.src);
+    size_t dst_pos = find_piece_pos(game, move.dst);
+    struct piece src_piece = game.pieces[src_pos];
+
+    if(src_piece.type != type::pawn)
+        return false;
+
+    if(move.src.col == move.dst.col)
+        return false;
+
+    if(dst_pos != (size_t)-1)
+        return false;
+
+    return true;
+}
+
 struct game apply_move(struct game game, struct move move)
 {
     size_t src_pos = find_piece_pos(game, move.src);
@@ -673,6 +739,22 @@ struct game apply_move(struct game game, struct move move)
                 game.pieces[rook_pos].square = {7,5};
             }
         }
+    }
+
+    if(is_en_passant_move(game, move))
+    {
+        struct square captured_square = move.dst;
+        if(game.cur_player == color::white)
+            captured_square.row--;
+        else if(game.cur_player == color::black)
+            captured_square.row++;
+        else
+            assert(false);
+
+        size_t pos = find_piece_pos(game, captured_square);
+        assert(pos != (size_t)-1);
+        struct piece& captured_piece = game.pieces[pos];
+        captured_piece.is_captured = true;
     }
 
     game.moves.push_back(move);
