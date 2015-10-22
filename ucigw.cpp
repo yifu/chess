@@ -198,8 +198,8 @@ string request_gnuchess_for_next_move(struct game game)
             continue;
         cout << l << endl;
 
-        size_t beg = l.find_first_of(" ");
-        size_t end = l.find_first_of(" ", beg+1);
+        size_t beg = l.find_first_of(" \n");
+        size_t end = l.find_first_of(" \n", beg+1);
         size_t len = end == (size_t)-1 ? -1 : end - beg - 1;
         printf("%lu %lu %lu\n", beg, end, len);
         result = l.substr(beg+1, len);
