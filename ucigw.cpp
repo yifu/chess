@@ -165,7 +165,7 @@ string request_gnuchess_for_next_move(struct game game)
         cmd << "moves ";
         for(auto move : game.moves)
         {
-            cmd << move2ucistr(move);
+            cmd << move2ucistr(move) << " ";
         }
     }
     cmd << "\n";
