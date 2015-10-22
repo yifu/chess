@@ -273,6 +273,24 @@ struct move_msg uci2movemsg(string move)
     return msg;
 }
 
+struct game play_next_move(int fd, struct game game)
+{
+    string new_move = request_gnuchess_for_next_move(game);
+    fflush(stdout);
+    struct move_msg msg = uci2movemsg(new_move);
+
+    ssize_t n = write(fd, &msg, sizeof(msg));
+    if(n == -1)
+    {
+        perror("write()");
+        exit(EXIT_FAILURE);
+    }
+
+    struct move mv = uci2move(new_move);
+    game = apply_move(game, mv);
+    return game;
+}
+
 int main()
 {
     printf("PID=%d.\n", getpid());
@@ -316,7 +334,8 @@ int main()
                 struct game new_game;
                 game = new_game;
                 game.pieces = initial_board;
-                // player_color = ((new_game_msg*)buf)->player_color;
+                if(((new_game_msg*)buf)->player_color == color::white)
+                    game = play_next_move(fd, game);
                 break;
             }
             case msg_type::move_msg:
@@ -340,20 +359,7 @@ int main()
                 assert(found != valid_moves.end());
 
                 game = apply_move(game, candidate_move);
-
-                string new_move = request_gnuchess_for_next_move(game);
-                fflush(stdout);
-                struct move_msg msg = uci2movemsg(new_move);
-
-                ssize_t n = write(fd, &msg, sizeof(msg));
-                if(n == -1)
-                {
-                    perror("write()");
-                    exit(EXIT_FAILURE);
-                }
-
-                struct move mv = uci2move(new_move);
-                game = apply_move(game, mv);
+                game = play_next_move(fd, game);
                 break;
             }
             default:
