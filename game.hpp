@@ -10,7 +10,7 @@ enum class color
     black,
 };
 
-enum class type
+enum class piece_type
 {
     none,
     pawn,
@@ -33,7 +33,7 @@ bool operator == (struct square l, struct square r);
 struct move
 {
     struct square src, dst;
-    type promotion;
+    piece_type promotion;
 };
 
 bool operator == (struct move l, struct move r);
@@ -41,7 +41,7 @@ bool operator == (struct move l, struct move r);
 struct piece
 {
     enum color color;
-    enum type type;
+    enum piece_type type;
     struct square square;
     bool is_captured;
 };

@@ -26,10 +26,10 @@ LOADLIBES=
 .PHONY: debug release clean
 
 debug: CXXFLAGS += -DDEBUG
-debug: chessboard server test
+debug: chessboard server test ucigw
 
 release: CXXFLAGS += -DNDEBUG -O3
-release: chessboard server test
+release: chessboard server test ucigw
 
 clean:
 	rm server chessboard test *.o
@@ -46,3 +46,6 @@ server: game.o net_protocol.o
 
 test: LDLIBS=
 test: test.o utils.o
+
+ucigw: LDLIBS=
+ucigw: game.o

@@ -20,6 +20,8 @@ using namespace std;
 
 int listen_fd = -1;
 
+extern FILE *dbg;
+
 // ulimit -n
 // sysctl -w fs.file-max=100000
 // cat /proc/sys/fs/file-nr
@@ -144,7 +146,7 @@ int find_opponent_fd(int fd)
 void process_move(int fd, struct move_msg *move_msg)
 {
     printf("move_msg={src={row=%d,col=%d},dst={row=%d,col=%d}}\n",
-           move_msg->src_row, move_msg->dst_col,
+           move_msg->src_row, move_msg->src_col,
            move_msg->dst_row, move_msg->dst_col);
     assert(current_game.white_fd != -1 && current_game.black_fd != -1);
     int opponent_fd = -1;
@@ -158,9 +160,19 @@ void process_move(int fd, struct move_msg *move_msg)
 
     struct move candidate_move = {{move_msg->src_row, move_msg->src_col},
                                   {move_msg->dst_row, move_msg->dst_col},
-                                  type::none};
+                                  piece_type::none};
     vector<struct move> valid_moves = next_valid_moves(current_game.game);
     auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
+
+    fprintf(dbg, "candidate:\n");
+    print_move(candidate_move);
+
+    fprintf(dbg, "valid moves:\n");
+    for(auto move : valid_moves)
+    {
+        print_move(move);
+    }
+
     if(found != valid_moves.end())
     {
         current_game.game = apply_move(current_game.game, candidate_move);
@@ -205,6 +217,7 @@ void process_move(int fd, struct move_msg *move_msg)
 
 void process_play_online(int fd, struct play_online_msg *play_online_msg __attribute__((unused)))
 {
+    printf("process_play_online(fd=%d,...)\n", fd);
     struct players_list_msg msg;
     msg.msg_type = msg_type::players;
     msg.players_list[0] = '\0';

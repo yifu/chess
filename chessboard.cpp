@@ -318,26 +318,26 @@ SDL_Texture *deduct_texture(struct piece piece)
     {
         switch(piece.type)
         {
-        case type::none: assert(false); break;
-        case type::pawn: return white_pawn_texture;
-        case type::rook: return white_rook_texture;
-        case type::knight: return white_knight_texture;
-        case type::bishop: return white_bishop_texture;
-        case type::queen: return white_queen_texture;
-        case type::king: return white_king_texture;
+        case piece_type::none: assert(false); break;
+        case piece_type::pawn: return white_pawn_texture;
+        case piece_type::rook: return white_rook_texture;
+        case piece_type::knight: return white_knight_texture;
+        case piece_type::bishop: return white_bishop_texture;
+        case piece_type::queen: return white_queen_texture;
+        case piece_type::king: return white_king_texture;
         }
     }
     else
     {
         switch(piece.type)
         {
-        case type::none: assert(false); break;
-        case type::pawn: return black_pawn_texture;
-        case type::rook: return black_rook_texture;
-        case type::knight: return black_knight_texture;
-        case type::bishop: return black_bishop_texture;
-        case type::queen: return black_queen_texture;
-        case type::king: return black_king_texture;
+        case piece_type::none: assert(false); break;
+        case piece_type::pawn: return black_pawn_texture;
+        case piece_type::rook: return black_rook_texture;
+        case piece_type::knight: return black_knight_texture;
+        case piece_type::bishop: return black_bishop_texture;
+        case piece_type::queen: return black_queen_texture;
+        case piece_type::king: return black_king_texture;
         }
     }
     assert(false);
@@ -453,7 +453,7 @@ void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
         struct piece& piece = game.pieces[dragged_piece];
         struct square src = piece.square;
         struct square dst = detect_square(e.button.x, e.button.y);
-        struct move candidate_move = {src, dst, type::none};
+        struct move candidate_move = {src, dst, piece_type::none};
 
         // TODO Refactor the following. Must be moved into game.cpp file?
 
@@ -823,7 +823,6 @@ int init_network(string ip, string port)
         exit_failure();
     }
 
-
     // TODO Handle SIGFPIPE.
     res = connect(fd, (struct sockaddr*)&addr, sizeof(addr));
     if(res == -1)
@@ -943,7 +942,7 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 move.src.col = msg.src_col;
                 move.dst.row = msg.dst_row;
                 move.dst.col = msg.dst_col;
-                move.promotion = type::none;
+                move.promotion = piece_type::none;
 
                 anim_sprite.pos = -1;
                 for(size_t i = 0; i < game.pieces.size(); i++)
