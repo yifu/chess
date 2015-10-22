@@ -103,8 +103,8 @@ int connect_game_server(string ip, string port)
 string square2ucistr(struct square square)
 {
     string result;
-    result.push_back(square.row + 'a');
-    result.push_back(square.col + '1');
+    result.push_back(square.col + 'a');
+    result.push_back(square.row + '1');
     return result;
 }
 
