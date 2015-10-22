@@ -17,6 +17,8 @@
 
 using namespace std;
 
+extern FILE *dbg;
+
 void exit_failure()
 {
     exit(EXIT_FAILURE);
@@ -188,8 +190,9 @@ string request_gnuchess_for_next_move(struct game game)
     string result;
 
     while ((read = getline(&line, &len, f)) != -1) {
-        // printf("Retrieved line of length %zu :\n", read);
-        // printf("%s", line);
+        printf("Retrieved line of length %zu :\n", read);
+        printf("%s\n", line);
+        fflush(stdout);
         string l = line;
         if(l.find("bestmove") == string::npos)
             continue;
@@ -200,6 +203,7 @@ string request_gnuchess_for_next_move(struct game game)
         size_t len = end == (size_t)-1 ? -1 : end - beg - 1;
         printf("%lu %lu %lu\n", beg, end, len);
         result = l.substr(beg+1, len);
+        assert(result != "");
         break;
     }
 
@@ -208,7 +212,34 @@ string request_gnuchess_for_next_move(struct game game)
     return result;
 }
 
-struct move_msg uci2move(string move)
+struct move uci2move(string move)
+{
+    printf("uci2move(\"%s\")\n", move.c_str());
+    assert(move.size() == 4 || move.size() == 5);
+    assert(move[0] >= 'a' && move[0] <= 'h');
+    assert(move[2] >= 'a' && move[2] <= 'h');
+    assert(move[1] >= '1' && move[1] <= '8');
+    assert(move[3] >= '1' && move[3] <= '8');
+    if(move.size() == 5)
+    {
+        bool found = false;
+        for(char p : {'q', 'r', 'n', 'b'})
+            if(p == move[4])
+                found = true;
+        assert(found);
+    }
+    struct move mv;
+    mv.src.row = move[1] - '1';
+    mv.src.col = move[0] - 'a';
+    mv.dst.row = move[3] - '1';
+    mv.dst.col = move[2] - 'a';
+    mv.promotion = piece_type::none;
+    printf("move=");
+    print_move(mv);
+    return mv;
+}
+
+struct move_msg uci2movemsg(string move)
 {
     printf("uci2move(\"%s\")\n", move.c_str());
     assert(move.size() == 4 || move.size() == 5);
@@ -244,6 +275,7 @@ struct move_msg uci2move(string move)
 
 int main()
 {
+    printf("PID=%d.\n", getpid());
     // enum color player_color = color::white;
     struct game game;
     game.pieces = initial_board;
@@ -293,14 +325,25 @@ int main()
                 struct move candidate_move = {{move_msg->src_row, move_msg->src_col},
                                               {move_msg->dst_row, move_msg->dst_col},
                                               piece_type::none/*type::none*/};
+                fprintf(dbg, "candidate move: ");
+                print_move(candidate_move);
+
                 vector<struct move> valid_moves = next_valid_moves(game);
+                fprintf(dbg, "valid moves:\n");
+                for(auto move : valid_moves)
+                {
+                    print_move(move);
+                }
+                fprintf(dbg, "\n");
+
                 auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
                 assert(found != valid_moves.end());
-                game.moves.push_back(candidate_move);
+
+                game = apply_move(game, candidate_move);
 
                 string new_move = request_gnuchess_for_next_move(game);
                 fflush(stdout);
-                struct move_msg msg = uci2move(new_move);
+                struct move_msg msg = uci2movemsg(new_move);
 
                 ssize_t n = write(fd, &msg, sizeof(msg));
                 if(n == -1)
@@ -308,6 +351,9 @@ int main()
                     perror("write()");
                     exit(EXIT_FAILURE);
                 }
+
+                struct move mv = uci2move(new_move);
+                game = apply_move(game, mv);
                 break;
             }
             default:
