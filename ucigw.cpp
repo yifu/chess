@@ -10,6 +10,7 @@
 #include <sstream>
 #include <assert.h>
 #include <algorithm>
+#include <vector>
 
 #include "utils.hpp"
 #include "game.hpp"
@@ -162,19 +163,17 @@ string request_gnuchess_for_next_move(struct game game)
     cmd << "isready\n";
     cmd << "ucinewgame\n";
     cmd << "position fen ";
-    cmd << game2fen(game);
+    vector<struct piece> pieces(begin(initial_board), end(initial_board));
+    cmd << board2fen(pieces);
 
-    // TODO better to generate the board position from the
-    // "initial_board"! And generate the moves history anyway...
-
-    // if(not game.moves.empty())
-    // {
-    //     cmd << "moves ";
-    //     for(auto move : game.moves)
-    //     {
-    //         cmd << move2ucistr(move) << " ";
-    //    }
-    // }
+    if(not game.moves.empty())
+    {
+        cmd << "moves ";
+        for(auto move : game.moves)
+        {
+            cmd << move2ucistr(move) << " ";
+       }
+    }
 
     cmd << "\n";
     cmd << "go wtime 122000 btime 120000 winc 2000 binc 2000\n";

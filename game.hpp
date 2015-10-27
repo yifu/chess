@@ -76,4 +76,4 @@ size_t find_piece_pos(struct game game, struct square square);
 bool is_king_checked(struct game game);
 bool is_white_king_checked(struct game game);
 bool is_black_king_checked(struct game game);
-std::string game2fen(struct game game);
+std::string board2fen(std::vector<struct piece> pieces);

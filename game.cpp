@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <algorithm>
+#include <vector>
 
 #include "game.hpp"
 
@@ -196,19 +197,25 @@ struct piece get_piece(struct game game, struct square square)
     assert(false);
 }
 
-size_t find_piece_pos(struct game game, struct square square)
+size_t find_piece_pos(vector<struct piece> pieces, struct square square)
 {
     assert(is_valid_square(square));
 
-    for(size_t i = 0; i < game.pieces.size(); i++)
+    for(size_t i = 0; i < pieces.size(); i++)
     {
-        struct piece piece = game.pieces[i];
+        struct piece piece = pieces[i];
         if(piece.is_captured)
             continue;
         if(piece.square == square)
             return i;
     }
     return -1;
+}
+
+size_t find_piece_pos(struct game game, struct square square)
+{
+    vector<struct piece> pieces(begin(game.pieces), end(game.pieces));
+    return find_piece_pos(pieces, square);
 }
 
 vector<struct move> generate_pawn_en_passant_move(struct game game, size_t pos)
@@ -942,7 +949,7 @@ char type2char(piece_type type)
     return ' ';
 }
 
-string game2fen(struct game game)
+string board2fen(vector<struct piece> pieces)
 {
     string fen;
     for(size_t r = 0; r < 8; r++)
@@ -950,7 +957,7 @@ string game2fen(struct game game)
         int empty_squares_cnt = 0;
         for(size_t c = 0; c < 8; c++)
         {
-            size_t pos = find_piece_pos(game, mk_square(8-r-1,c));
+            size_t pos = find_piece_pos(pieces, mk_square(8-r-1,c));
             if(pos == (size_t)-1)
             {
                 empty_squares_cnt++;
@@ -964,7 +971,7 @@ string game2fen(struct game game)
                 empty_squares_cnt = 0;
             }
 
-            struct piece piece = game.pieces[pos];
+            struct piece piece = pieces[pos];
             char p = type2char(piece.type);
             if(piece.color == color::white)
                 p = toupper(p);
@@ -981,14 +988,7 @@ string game2fen(struct game game)
         if(8-r-1 != 0)
             fen += "/";
     }
-    fen += " ";
-
-    if(game.cur_player == color::white)
-        fen += "w ";
-    else if(game.cur_player == color::black)
-        fen += "b ";
-    else
-        assert(false);
+    fen += " w ";
 
     // Castling availability and en-passant availability.
     fen += "- - ";
