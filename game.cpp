@@ -12,41 +12,46 @@ using namespace std;
 string filename = string("debug-") + to_string(getpid()) + ".txt";
 FILE *dbg = fopen(filename.c_str(), "w");
 
-array<struct piece, 32> initial_board = {{
-    {color::white, piece_type::pawn, {1, 0}, false},
-    {color::white, piece_type::pawn, {1, 1}, false},
-    {color::white, piece_type::pawn, {1, 2}, false},
-    {color::white, piece_type::pawn, {1, 3}, false},
-    {color::white, piece_type::pawn, {1, 4}, false},
-    {color::white, piece_type::pawn, {1, 5}, false},
-    {color::white, piece_type::pawn, {1, 6}, false},
-    {color::white, piece_type::pawn, {1, 7}, false},
-    {color::white, piece_type::rook, {0, 0}, false},
-    {color::white, piece_type::rook, {0, 7}, false},
-    {color::white, piece_type::knight, {0, 1}, false},
-    {color::white, piece_type::knight, {0, 6}, false},
-    {color::white, piece_type::bishop, {0, 2}, false},
-    {color::white, piece_type::bishop, {0, 5}, false},
-    {color::white, piece_type::queen, {0, 3}, false},
-    {color::white, piece_type::king, {0, 4}, false},
+// array<struct piece, 32> initial_board = {{
+//     {color::white, piece_type::pawn, {1, 0}, false},
+//     {color::white, piece_type::pawn, {1, 1}, false},
+//     {color::white, piece_type::pawn, {1, 2}, false},
+//     {color::white, piece_type::pawn, {1, 3}, false},
+//     {color::white, piece_type::pawn, {1, 4}, false},
+//     {color::white, piece_type::pawn, {1, 5}, false},
+//     {color::white, piece_type::pawn, {1, 6}, false},
+//     {color::white, piece_type::pawn, {1, 7}, false},
+//     {color::white, piece_type::rook, {0, 0}, false},
+//     {color::white, piece_type::rook, {0, 7}, false},
+//     {color::white, piece_type::knight, {0, 1}, false},
+//     {color::white, piece_type::knight, {0, 6}, false},
+//     {color::white, piece_type::bishop, {0, 2}, false},
+//     {color::white, piece_type::bishop, {0, 5}, false},
+//     {color::white, piece_type::queen, {0, 3}, false},
+//     {color::white, piece_type::king, {0, 4}, false},
 
-    {color::black, piece_type::pawn, {6, 0}, false},
-    {color::black, piece_type::pawn, {6, 1}, false},
-    {color::black, piece_type::pawn, {6, 2}, false},
-    {color::black, piece_type::pawn, {6, 3}, false},
-    {color::black, piece_type::pawn, {6, 4}, false},
-    {color::black, piece_type::pawn, {6, 5}, false},
-    {color::black, piece_type::pawn, {6, 6}, false},
-    {color::black, piece_type::pawn, {6, 7}, false},
-    {color::black, piece_type::rook, {7, 0}, false},
-    {color::black, piece_type::rook, {7, 7}, false},
-    {color::black, piece_type::knight, {7, 1}, false},
-    {color::black, piece_type::knight, {7, 6}, false},
-    {color::black, piece_type::bishop, {7, 2}, false},
-    {color::black, piece_type::bishop, {7, 5}, false},
-    {color::black, piece_type::queen, {7, 3}, false},
-    {color::black, piece_type::king, {7, 4}, false},
-}};
+//     {color::black, piece_type::pawn, {6, 0}, false},
+//     {color::black, piece_type::pawn, {6, 1}, false},
+//     {color::black, piece_type::pawn, {6, 2}, false},
+//     {color::black, piece_type::pawn, {6, 3}, false},
+//     {color::black, piece_type::pawn, {6, 4}, false},
+//     {color::black, piece_type::pawn, {6, 5}, false},
+//     {color::black, piece_type::pawn, {6, 6}, false},
+//     {color::black, piece_type::pawn, {6, 7}, false},
+//     {color::black, piece_type::rook, {7, 0}, false},
+//     {color::black, piece_type::rook, {7, 7}, false},
+//     {color::black, piece_type::knight, {7, 1}, false},
+//     {color::black, piece_type::knight, {7, 6}, false},
+//     {color::black, piece_type::bishop, {7, 2}, false},
+//     {color::black, piece_type::bishop, {7, 5}, false},
+//     {color::black, piece_type::queen, {7, 3}, false},
+//     {color::black, piece_type::king, {7, 4}, false},
+// }};
+
+array<struct piece, 3> initial_board = {{
+        {color::white, piece_type::king, {0, 0}, false},
+        {color::white, piece_type::queen, {0, 7}, false},
+        {color::black, piece_type::king, {5, 4}, false},}};
 
 struct square mk_square(int row, int col)
 {
@@ -918,4 +923,78 @@ bool is_black_king_checked(struct game game)
 {
     game.cur_player = color::white;
     return is_king_checked(game);
+}
+
+char type2char(piece_type type)
+{
+    switch(type)
+    {
+    case piece_type::king: return 'k';
+    case piece_type::queen: return 'q';
+    case piece_type::rook: return 'r';
+    case piece_type::bishop: return 'b';
+    case piece_type::knight: return 'n';
+    case piece_type::pawn: return 'p';
+    default:
+        assert(false);
+    }
+    assert(false);
+    return ' ';
+}
+
+string game2fen(struct game game)
+{
+    string fen;
+    for(size_t r = 0; r < 8; r++)
+    {
+        int empty_squares_cnt = 0;
+        for(size_t c = 0; c < 8; c++)
+        {
+            size_t pos = find_piece_pos(game, mk_square(8-r-1,c));
+            if(pos == (size_t)-1)
+            {
+                empty_squares_cnt++;
+                continue;
+            }
+
+            if(empty_squares_cnt != 0)
+            {
+                assert(to_string(empty_squares_cnt).size() < 10);
+                fen += to_string(empty_squares_cnt);
+                empty_squares_cnt = 0;
+            }
+
+            struct piece piece = game.pieces[pos];
+            char p = type2char(piece.type);
+            if(piece.color == color::white)
+                p = toupper(p);
+            fen.push_back(p);
+        }
+
+        if(empty_squares_cnt != 0)
+        {
+            assert(to_string(empty_squares_cnt).size() < 10);
+            fen += to_string(empty_squares_cnt);
+            empty_squares_cnt = 0;
+        }
+
+        if(8-r-1 != 0)
+            fen += "/";
+    }
+    fen += " ";
+
+    if(game.cur_player == color::white)
+        fen += "w ";
+    else if(game.cur_player == color::black)
+        fen += "b ";
+    else
+        assert(false);
+
+    // Castling availability and en-passant availability.
+    fen += "- - ";
+
+    // Half-move and full-move counters.
+    fen += "0 40 ";
+
+    return fen;
 }

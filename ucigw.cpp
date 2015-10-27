@@ -161,19 +161,27 @@ string request_gnuchess_for_next_move(struct game game)
     cmd << "setoption name Hash value 32\n";
     cmd << "isready\n";
     cmd << "ucinewgame\n";
-    cmd << "position startpos";
-    if(not game.moves.empty())
-    {
-        cmd << "moves ";
-        for(auto move : game.moves)
-        {
-            cmd << move2ucistr(move) << " ";
-        }
-    }
+    cmd << "position fen ";
+    cmd << game2fen(game);
+
+    // TODO better to generate the board position from the
+    // "initial_board"! And generate the moves history anyway...
+
+    // if(not game.moves.empty())
+    // {
+    //     cmd << "moves ";
+    //     for(auto move : game.moves)
+    //     {
+    //         cmd << move2ucistr(move) << " ";
+    //    }
+    // }
+
     cmd << "\n";
     cmd << "go wtime 122000 btime 120000 winc 2000 binc 2000\n";
     cmd << "EOF\n";
     cmd << "gnuchess --uci\n";
+
+    printf("cmd [%s].\n", cmd.str().c_str());
 
     FILE *f = popen(cmd.str().c_str(), "r");
     if (f == NULL)

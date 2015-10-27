@@ -50,13 +50,15 @@ struct game
 {
     enum color cur_player = color::white;
     std::vector<struct move> moves;
-    std::array<struct piece, 32> pieces;
+//    std::array<struct piece, 32> pieces;
+    std::array<struct piece, 3> pieces;
 
     bool is_white_king_checked = false;
     bool is_black_king_checked = false;
 };
 
-extern std::array<struct piece, 32> initial_board;
+// extern std::array<struct piece, 32> initial_board;
+extern std::array<struct piece, 3> initial_board;
 
 void print_square(struct square square);
 void print_move(struct move move);
@@ -74,3 +76,4 @@ size_t find_piece_pos(struct game game, struct square square);
 bool is_king_checked(struct game game);
 bool is_white_king_checked(struct game game);
 bool is_black_king_checked(struct game game);
+std::string game2fen(struct game game);
