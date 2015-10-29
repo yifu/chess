@@ -154,14 +154,9 @@ string move2ucistr(struct move move)
     return result;
 }
 
-string request_gnuchess_for_next_move(struct game game)
+string request_gnuchess_for_next_move(struct game game, int gnuchessfd)
 {
     ostringstream cmd;
-    cmd << "cat << EOF | \n";
-    cmd << "uci\n";
-    cmd << "setoption name Hash value 32\n";
-    cmd << "isready\n";
-    cmd << "ucinewgame\n";
     cmd << "position fen ";
     vector<struct piece> pieces(begin(initial_board), end(initial_board));
     cmd << board2fen(pieces);
@@ -176,46 +171,39 @@ string request_gnuchess_for_next_move(struct game game)
     }
 
     cmd << "\n";
+    // TODO Update times.
     cmd << "go wtime 122000 btime 120000 winc 2000 binc 2000\n";
-    cmd << "EOF\n";
-    cmd << "gnuchess --uci\n";
-
-    printf("cmd [%s].\n", cmd.str().c_str());
-
-    FILE *f = popen(cmd.str().c_str(), "r");
-    if (f == NULL)
+    ssize_t n = write(gnuchessfd, cmd.str().c_str(), cmd.str().length());
+    if(n == -1)
     {
-        perror("popen()");
+        perror("write");
         exit(EXIT_FAILURE);
     }
-    fflush(f);
 
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-
-    string result;
-
-    while ((read = getline(&line, &len, f)) != -1) {
-        printf("Retrieved line of length %zu :\n", read);
-        printf("%s\n", line);
-        fflush(stdout);
-        string l = line;
-        if(l.find("bestmove") == string::npos)
+    string result, output;
+    char buf[1024];
+    while((n = read(gnuchessfd, buf, sizeof(buf))) != -1)
+    {
+        printf("Retrieved line of length %zu :\n", n);
+        output += string(buf, n);
+        size_t pos = output.find("bestmove");
+        if(pos == string::npos)
             continue;
-        cout << l << endl;
+        if(output.length() < string("bestmove a1a1").length())
+            continue;
+        output.erase(0, pos);
+        cout << output << endl;
 
-        size_t beg = l.find_first_of(" \n");
-        size_t end = l.find_first_of(" \n", beg+1);
+        size_t beg = output.find_first_of(" \n");
+        size_t end = output.find_first_of(" \n", beg+1);
         size_t len = end == (size_t)-1 ? -1 : end - beg - 1;
         printf("%lu %lu %lu\n", beg, end, len);
-        result = l.substr(beg+1, len);
+        result = output.substr(beg+1, len);
         assert(result != "");
         break;
     }
 
     assert(result != "");
-    free(line);
     return result;
 }
 
@@ -280,9 +268,9 @@ struct move_msg uci2movemsg(string move)
     return msg;
 }
 
-struct game play_next_move(int fd, struct game game)
+struct game play_next_move(int fd, struct game game, int gnuchessfd)
 {
-    string new_move = request_gnuchess_for_next_move(game);
+    string new_move = request_gnuchess_for_next_move(game, gnuchessfd);
     fflush(stdout);
     struct move_msg msg = uci2movemsg(new_move);
 
@@ -304,6 +292,56 @@ int main()
     // enum color player_color = color::white;
     struct game game;
     game.pieces = initial_board;
+
+    int sv[2];
+    int n = socketpair(AF_UNIX, SOCK_STREAM, 0/*protocol*/, sv);
+    if(n == -1)
+    {
+        perror("socketpair");
+        exit(EXIT_FAILURE);
+    }
+    assert(sv[0] != sv[1]);
+
+    pid_t pid = fork();
+    if(pid == -1)
+    {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    }
+    else if(pid == 0)
+    {
+        close(0);
+        close(1);
+        close(2);
+        close(sv[0]);
+        sv[0] = 0;
+        dup(sv[1]);
+        dup(sv[1]);
+        dup(sv[1]);
+
+        char prog[] = "gnuchess";
+        const char * arg[] = { prog, "--uci", NULL };
+        execvp(prog, (char**)arg);
+        perror("execvp");
+        exit(EXIT_FAILURE);
+    }
+    else
+    {
+        close(sv[1]);
+        sv[1] = 0;
+
+        ostringstream cmd;
+        cmd << "uci\n";
+        cmd << "setoption name Hash value 32\n";
+        cmd << "isready\n";
+        cmd << "ucinewgame\n";
+        ssize_t n = write(sv[0], cmd.str().c_str(), cmd.str().size());
+        if(n == -1)
+        {
+            perror("write");
+            exit(EXIT_FAILURE);
+        }
+    }
 
     int fd = connect_game_server("195.154.72.36", "55555");
 
@@ -342,7 +380,15 @@ int main()
                 game = new_game;
                 game.pieces = initial_board;
                 if(((new_game_msg*)buf)->player_color == color::white)
-                    game = play_next_move(fd, game);
+                    game = play_next_move(fd, game, sv[0]);
+
+                char cmd[] = "ucinewgame\n";
+                ssize_t n = write(sv[0], cmd, strlen(cmd));
+                if(n == -1)
+                {
+                    perror("write");
+                    exit(EXIT_FAILURE);
+                }
                 break;
             }
             case msg_type::move_msg:
@@ -366,7 +412,8 @@ int main()
                 assert(found != valid_moves.end());
 
                 game = apply_move(game, candidate_move);
-                game = play_next_move(fd, game);
+                // TODO Process end of game here and in play_next_move().
+                game = play_next_move(fd, game, sv[0]);
                 break;
             }
             default:
