@@ -491,12 +491,12 @@ void process_sdl_mousebuttonup(SDL_Event& e, struct game& game, int fd)
                 fprintf(dbg, "APPLY MOVE.\n");
                 print_move(candidate_move);
                 game = apply_move(game, candidate_move);
+                update_king_statuses(game);
                 fprintf(dbg, "APPLY MOVE - AFTER.\n");
                 send_move(candidate_move, fd);
 
                 if(next_valid_moves(game).size() == 0)
                 {
-                    update_king_statuses(game);
                     if(game.cur_player == color::white && game.is_white_king_checked)
                         fprintf(dbg, "WHITE IS CHECKMATED!!\n");
                     else if(game.cur_player == color::black && game.is_black_king_checked)
@@ -967,9 +967,9 @@ void process_server_fd(struct pollfd pollfd, struct game& game)
                 anim_sprite.end = begin+duration;
 
                 game = apply_move(game, move);
+                update_king_statuses(game);
                 if(next_valid_moves(game).size() == 0)
                 {
-                    update_king_statuses(game);
                     if(game.cur_player == color::white && game.is_white_king_checked)
                         fprintf(dbg, "WHITE IS CHECKMATED!!\n");
                     else if(game.cur_player == color::black && game.is_black_king_checked)

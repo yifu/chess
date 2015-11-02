@@ -283,6 +283,7 @@ struct game play_next_move(int fd, struct game game, int gnuchessfd)
 
     struct move mv = uci2move(new_move);
     game = apply_move(game, mv);
+    update_king_statuses(game);
     return game;
 }
 
@@ -408,12 +409,37 @@ int main()
                 }
                 fprintf(dbg, "\n");
 
+
                 auto found = find(valid_moves.begin(), valid_moves.end(), candidate_move);
                 assert(found != valid_moves.end());
 
                 game = apply_move(game, candidate_move);
-                // TODO Process end of game here and in play_next_move().
+                update_king_statuses(game);
+
+                if(next_valid_moves(game).size() == 0)
+                {
+                    if(game.cur_player == color::white && game.is_white_king_checked)
+                        fprintf(dbg, "WHITE IS CHECKMATED!!\n");
+                    else if(game.cur_player == color::black && game.is_black_king_checked)
+                        fprintf(dbg, "BLACK IS CHECKMATED!!\n");
+                    else
+                        fprintf(dbg, "STALEMATE!!\n");
+                    exit(EXIT_SUCCESS);
+                }
+
                 game = play_next_move(fd, game, sv[0]);
+
+                if(next_valid_moves(game).size() == 0)
+                {
+                    if(game.cur_player == color::white && game.is_white_king_checked)
+                        fprintf(dbg, "WHITE IS CHECKMATED!!\n");
+                    else if(game.cur_player == color::black && game.is_black_king_checked)
+                        fprintf(dbg, "BLACK IS CHECKMATED!!\n");
+                    else
+                        fprintf(dbg, "STALEMATE!!\n");
+                    exit(EXIT_SUCCESS);
+                }
+
                 break;
             }
             default:
@@ -422,17 +448,5 @@ int main()
             }
 
         }
-
-        // TODO
-        // 1- popen(). The cmd should be: "echo \"*full gnu chess input*\" | gnuchess -uci"
-        // 2- Listen to gnuchess output. "grep" the bestmove line.
-        // 3- Extract the new bestmove and translate it into a netprotocol's move.
-        // 4- Apply it to the current game. Send it over the network.
-
-//         string cmd = "cat << EOF |
-// uci
-// EOF
-// gnuchess --uci
-// ";
     }
 }
